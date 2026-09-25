@@ -1,0 +1,17 @@
+.clasp.json
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+Thumbs.db
+*.log
+credentials*.json
+service-account*.json
+token*.json
+private/
+exports/
+test-data/private/
