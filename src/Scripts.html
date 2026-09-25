@@ -1,0 +1,139 @@
+<script>
+  const appState = {
+    bootstrap: null,
+    locations: {
+      lgusByProvince: {},
+      barangaysByLgu: {}
+    },
+    rsbsa: {
+      sourceImageUrl: null,
+      ocrText: ''
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bindRsbsaStatus();
+    bindRsbsaImage();
+
+    google.script.run
+      .withSuccessHandler(handleBootstrapSuccess)
+      .withFailureHandler(handleServerError)
+      .getBootstrapData();
+  });
+
+  function handleBootstrapSuccess(data) {
+    appState.bootstrap = data;
+    buildLocationIndexes(data.locations || {});
+
+    document.getElementById('loading-state').classList.add('is-hidden');
+    document.getElementById('farmer-step').classList.remove('is-hidden');
+  }
+
+  function buildLocationIndexes(locations) {
+    const lgus = locations.lgus || [];
+    const barangays = locations.barangays || [];
+
+    appState.locations.lgusByProvince = lgus.reduce(function (map, lgu) {
+      const key = String(lgu.province_code || '');
+      if (!map[key]) map[key] = [];
+      map[key].push(lgu);
+      return map;
+    }, {});
+
+    appState.locations.barangaysByLgu = barangays.reduce(function (map, barangay) {
+      const key = String(barangay.lgu_code || '');
+      if (!map[key]) map[key] = [];
+      map[key].push(barangay);
+      return map;
+    }, {});
+  }
+
+  function bindRsbsaStatus() {
+    document.querySelectorAll('input[name="rsbsa_status"]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        const value = input.value;
+        const scanPanel = document.getElementById('rsbsa-scan-panel');
+        const numberPanel = document.getElementById('rsbsa-number-panel');
+        const confirmed = document.getElementById('rsbsa-confirmed');
+
+        scanPanel.classList.toggle('is-hidden', value !== 'REGISTERED_ID_AVAILABLE');
+        numberPanel.classList.toggle('is-hidden', value === 'NOT_REGISTERED');
+
+        if (value === 'NOT_REGISTERED') {
+          document.getElementById('rsbsa-no').value = '';
+          confirmed.checked = true;
+          releaseRsbsaImage();
+        } else {
+          confirmed.checked = false;
+        }
+      });
+    });
+  }
+
+  function bindRsbsaImage() {
+    const input = document.getElementById('rsbsa-image');
+
+    input.addEventListener('change', async function (event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      releaseRsbsaImage();
+      appState.rsbsa.sourceImageUrl = URL.createObjectURL(file);
+
+      showMessage('Reading the RSBSA ID locally. Please wait…', 'is-info');
+
+      try {
+        // Initial implementation: OCR locally in the browser.
+        // Image preprocessing and RSBSA-specific parsing will be tuned
+        // after testing against a privacy-safe sample of the actual ID layout.
+        const result = await Tesseract.recognize(file, 'eng');
+        appState.rsbsa.ocrText = result.data.text || '';
+
+        const rsbsaCandidate = extractRsbsaCandidate(appState.rsbsa.ocrText);
+        if (rsbsaCandidate) {
+          document.getElementById('rsbsa-no').value = rsbsaCandidate;
+          showMessage('RSBSA text detected. Please verify/correct the information before continuing.', 'is-success');
+        } else {
+          showMessage('The RSBSA number was not detected reliably. Please enter it manually.', 'is-warning');
+        }
+      } catch (error) {
+        showMessage('OCR failed. You can still enter the RSBSA number manually.', 'is-warning');
+      } finally {
+        releaseRsbsaImage();
+      }
+    });
+  }
+
+  function extractRsbsaCandidate(text) {
+    const normalized = String(text || '')
+      .toUpperCase()
+      .replace(/[–—]/g, '-');
+
+    // Temporary permissive pattern. Replace/tighten after the actual
+    // RSBSA ID number format has been verified from a sample card.
+    const match = normalized.match(/\b\d{2}[\s-]*\d{2}[\s-]*\d{2}[\s-]*\d{4,8}\b/);
+    if (!match) return '';
+
+    return match[0].replace(/\s+/g, '-').replace(/-+/g, '-');
+  }
+
+  function releaseRsbsaImage() {
+    if (appState.rsbsa.sourceImageUrl) {
+      URL.revokeObjectURL(appState.rsbsa.sourceImageUrl);
+      appState.rsbsa.sourceImageUrl = null;
+    }
+
+    // We intentionally do not upload or persist the selected image.
+  }
+
+  function showMessage(message, className) {
+    const el = document.getElementById('app-message');
+    el.className = 'notification ' + (className || 'is-info');
+    el.textContent = message;
+  }
+
+  function handleServerError(error) {
+    document.getElementById('loading-state').classList.add('is-hidden');
+    showMessage(error && error.message ? error.message : 'An unexpected server error occurred.', 'is-danger');
+  }
+</script>
