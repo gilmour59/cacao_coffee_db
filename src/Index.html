@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <section class="section app-shell">
+    <div class="container is-max-desktop">
+      <div class="mb-5">
+        <p class="is-size-7 has-text-grey"><?= environment ?></p>
+        <h1 class="title is-4"><?= appName ?></h1>
+        <p class="subtitle is-6">
+          Farmer profiling, approximate farm location, Coffee/Cacao production,
+          facilities, and intervention needs.
+        </p>
+      </div>
+
+      <div id="app-message" class="notification is-hidden"></div>
+
+      <div class="box">
+        <div class="steps-bar mb-5">
+          <span class="step-pill is-active">1. Farmer</span>
+          <span class="step-pill">2. Farm</span>
+          <span class="step-pill">3. Commodity</span>
+          <span class="step-pill">4. Production</span>
+          <span class="step-pill">5. Review</span>
+        </div>
+
+        <div id="loading-state">
+          <progress class="progress is-small is-primary" max="100">Loading</progress>
+          <p class="has-text-grey">Loading reference data…</p>
+        </div>
+
+        <div id="farmer-step" class="is-hidden">
+          <h2 class="title is-5">Farmer Information</h2>
+
+          <div class="field">
+            <label class="label">RSBSA Registration Status</label>
+            <div class="control">
+              <label class="radio">
+                <input type="radio" name="rsbsa_status" value="REGISTERED_ID_AVAILABLE">
+                Registered — ID available
+              </label>
+              <br>
+              <label class="radio">
+                <input type="radio" name="rsbsa_status" value="REGISTERED_NO_ID">
+                Registered — ID not available
+              </label>
+              <br>
+              <label class="radio">
+                <input type="radio" name="rsbsa_status" value="NOT_REGISTERED">
+                Not yet registered
+              </label>
+            </div>
+          </div>
+
+          <div id="rsbsa-scan-panel" class="field is-hidden">
+            <label class="label">Scan RSBSA ID</label>
+            <div class="control">
+              <input id="rsbsa-image" class="input" type="file" accept="image/*" capture="environment">
+            </div>
+            <p class="help">
+              The image will be used only for local OCR/verification and is not intended to be stored.
+            </p>
+          </div>
+
+          <div id="rsbsa-number-panel" class="field is-hidden">
+            <label class="label" for="rsbsa-no">RSBSA Number</label>
+            <div class="control">
+              <input id="rsbsa-no" class="input" type="text" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="columns is-multiline">
+            <div class="column is-half">
+              <label class="label">First Name</label>
+              <input id="first-name" class="input" type="text">
+            </div>
+            <div class="column is-half">
+              <label class="label">Last Name</label>
+              <input id="last-name" class="input" type="text">
+            </div>
+            <div class="column is-half">
+              <label class="label">Middle Name</label>
+              <input id="middle-name" class="input" type="text">
+            </div>
+            <div class="column is-half">
+              <label class="label">Suffix</label>
+              <input id="suffix" class="input" type="text">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="checkbox">
+              <input id="rsbsa-confirmed" type="checkbox">
+              I have reviewed the RSBSA information entered/extracted above.
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2 class="title is-6">Development status</h2>
+        <p>
+          This is the initial Apps Script shell. Farmer, farm, OCR, validation,
+          and dashboard modules will be wired to the V1 schema incrementally.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
+  <?!= include('Scripts'); ?>
+</body>
+</html>
