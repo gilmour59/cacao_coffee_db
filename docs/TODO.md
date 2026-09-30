@@ -23,11 +23,14 @@
 
 - [x] Initialize GitHub repository.
 - [x] Add architecture/roadmap/schema docs.
-- [x] Add clasp configuration example.
+- [x] Add TEST/PROD clasp configuration templates.
+- [x] Pin clasp and add simple npm maintenance commands.
+- [x] Document environment, role, update, release, rollback, and turnover procedures.
 - [ ] Install/configure clasp locally.
 - [ ] Create TEST Apps Script project.
-- [ ] Add TEST script ID to local .clasp.json only.
-- [ ] Verify push/pull workflow.
+- [ ] Add TEST script ID to local `.clasp.test.json` only.
+- [ ] Verify TEST push/pull workflow.
+- [ ] Create PROD clasp mapping only after HVCP production project exists.
 
 ## C. TEST Google Sheet
 
@@ -154,6 +157,11 @@
 - [ ] HVCP creates production web-app deployment.
 - [ ] Connect production Looker Studio.
 - [ ] Production smoke test.
-- [ ] Administrator guide.
-- [ ] Encoder quick guide.
-- [ ] Handover/source documentation.
+- [x] Administrator/operations runbook.
+- [x] Technical maintainer quick command guide.
+- [x] Role workflow documentation.
+- [x] Release and rollback documentation.
+- [x] Configuration/environment documentation.
+- [x] Handover/source documentation.
+- [ ] Encoder quick user guide based on final UI.
+- [ ] Record final production deployment/version in internal handover record.
