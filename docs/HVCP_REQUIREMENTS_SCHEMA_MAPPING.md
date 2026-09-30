@@ -8,16 +8,17 @@ Use questionnaire responses to confirm operational inputs and relational structu
 
 | Data model area | Questionnaire coverage | Key decisions obtained |
 |---|---|---|
-| Farmers | Sections 2, 3, 13 | RSBSA rules, name structure, sex/gender values, required identity/contact fields, duplicate behavior |
+| Farmers | Sections 2, 3, 13, 14 | RSBSA rules, name structure, sex/gender values, required identity/contact fields, duplicate behavior, return-user verification |
 | Farms | Sections 4, 7, 13 | multi-farm support, farm address/location behavior, topography, road distance, map/GPS capture |
 | Plantings | Sections 4, 5, 13 | Coffee/Cacao coexistence, multiple varieties, year planted, tree-count groups, area unit |
 | Production | Sections 6, 13 | unit, reporting basis, product form, granularity, multi-year history |
 | Facilities | Sections 5, 13 | facility categories, quantity/capacity/details, explicit None, farmer-vs-farm ownership |
 | Interventions received | Sections 5, 13 | intervention categories, provider/source, year received, farmer-vs-farm ownership |
 | Intervention needs | Sections 5, 13 | categories, priority, farmer-vs-farm ownership |
-| Submissions | Sections 8, 13 | validation flow, revalidation after updates, Rejected status |
-| Users | Sections 8, 9, 10, 13 | roles, intended users, account types, geographic access scope, production focal |
-| Audit Log | Section 13 | whether change/validation history is required |
+| Submissions | Sections 8, 13, 14 | validation flow, revalidation after updates, Rejected status, identity-correction/duplicate-review routing |
+| Users | Sections 8, 9, 10, 13, 14 | roles, intended users, account types, farmer direct-access model, geographic access scope, production focal, correction/merge authority |
+| Audit Log | Sections 13, 14 | change/validation history plus protected identity correction and merge accountability |
+| Identity Reviews | Sections 13, 14 | possible-duplicate review, return-user linkage, correction approval, merge decision |
 | Reference tables | Sections 5, 6, 13 | varieties, topography, intervention types, facility types, production units, sex/gender values |
 | Dashboard/reporting | Section 11 | KPIs, filters, export requirements |
 | UAT/turnover | Sections 10, 12 | owner account/Shared Drive, focal person, sample data, UAT participants |
