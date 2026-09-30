@@ -3,20 +3,23 @@
 ## A. Requirements and data model
 
 - [x] Select Apps Script + Google Sheets for V1.
-- [x] Add RSBSA registration states.
-- [x] Make RSBSA OCR mandatory in V1 when an ID is available.
+- [x] Define RSBSA states and client-side OCR direction.
 - [x] Do not retain RSBSA ID images.
-- [x] Add PSGC Province → Municipality/City → Barangay references.
-- [x] Add approximate farm latitude/longitude via map pin.
-- [x] Draft complete V1 schema.
-- [x] Define secure farmer identity/deduplication design.
-- [ ] Review schema with HVCP.
-- [ ] Confirm whether farmers directly use the app or profiling is encoder-assisted only.
-- [ ] If farmers directly return to the app, confirm approved authentication/verification method before allowing access to an existing profile.
-- [ ] Confirm who may approve protected RSBSA/name corrections.
-- [ ] Confirm who may execute duplicate-record merges.
-- [ ] Confirm what HVCP accepts as secondary confirmation for a strong identity match.
-- [ ] Confirm whether approved profile updates must pass validation again.
+- [x] Use PSGC Province → Municipality/City → Barangay references.
+- [x] Add approximate farm latitude/longitude.
+- [x] Define permanent Farmer Master + Farm Master + time-series profiling direction.
+- [x] Finalize V1 farmer access model: public intake link for new farmers; personalized secure links for existing farmers.
+- [x] Define one secure link = one farmer + one profiling cycle/purpose.
+- [x] Define annual profiling with additional update when there is an expansion.
+- [x] Preserve previous approved yearly observations rather than overwriting them.
+- [x] Define backend change classifications: NO_CHANGE, MODIFICATION, NEW_ENTRY, EXPANSION, ANOMALY.
+- [x] Define secure deduplication and identity-review rules.
+- [ ] Review final operational workflow with HVCP.
+- [ ] Confirm whether all submissions or only flagged/exception submissions require Validator review.
+- [ ] Confirm who may generate/resend/revoke personalized profiling links.
+- [ ] Confirm preferred link delivery channels.
+- [ ] Confirm secure-link validity period and returned-correction behavior.
+- [ ] Confirm HVCP's operational definition of expansion.
 - [ ] Confirm exact RSBSA number format from a sample ID.
 - [ ] Confirm official Coffee variety list.
 - [ ] Confirm official Cacao variety list.
@@ -24,7 +27,7 @@
 - [ ] Confirm intervention choices.
 - [ ] Confirm facility/equipment choices.
 - [ ] Confirm production units/product forms.
-- [ ] Confirm which fields are mandatory vs optional in field operations.
+- [ ] Confirm which fields are mandatory vs optional.
 
 ## B. Repository and local development
 
@@ -32,32 +35,36 @@
 - [x] Add architecture/roadmap/schema docs.
 - [x] Add TEST/PROD clasp configuration templates.
 - [x] Pin clasp and add simple npm maintenance commands.
-- [x] Document environment, role, update, release, rollback, and turnover procedures.
-- [x] Document secure farmer identity, return-user, typo-correction, duplicate-review, and merge rules.
+- [x] Document environment, role, release, rollback, and turnover procedures.
+- [x] Document secure identity/deduplication rules.
+- [x] Document secure link-based profiling flow.
+- [x] Add profiling swimlane documentation.
 - [ ] Install/configure clasp locally.
 - [ ] Create TEST Apps Script project.
-- [ ] Add TEST script ID to local `.clasp.test.json` only.
+- [ ] Add TEST script ID to local `.clasp.test.json`.
 - [ ] Verify TEST push/pull workflow.
-- [ ] Create PROD clasp mapping only after HVCP production project exists.
+- [ ] Create PROD clasp mapping after HVCP production project exists.
 
-## C. TEST Google Sheet
+## C. TEST Google Sheet / data model
 
 - [ ] Create TEST spreadsheet.
 - [ ] Add Farmers.
 - [ ] Add Farms.
+- [ ] Add Profiling_Rounds.
 - [ ] Add Plantings.
+- [ ] Add Planting_Observations or equivalent time-bound planting snapshot structure.
 - [ ] Add Production.
-- [ ] Add Facilities.
+- [ ] Add Facilities / facility observations as finalized.
 - [ ] Add Interventions.
 - [ ] Add Intervention_Needs.
 - [ ] Add Submissions.
+- [ ] Add Profiling_Invitations.
 - [ ] Add Identity_Reviews.
 - [ ] Add Users.
 - [ ] Add Audit_Log.
 - [ ] Add all reference sheets.
-- [ ] Format PSGC/ID columns as Plain text.
-- [ ] Protect system/ID columns.
-- [ ] Protect canonical identity/merge columns from direct staff edits.
+- [ ] Format IDs/PSGC codes as Plain text.
+- [ ] Protect system-generated and canonical identity columns.
 - [ ] Load Region VI PSGC reference data.
 - [ ] Load initial Coffee/Cacao reference data.
 
@@ -71,84 +78,86 @@
 - [ ] Implement reference-data bootstrap.
 - [ ] Implement audit logging.
 - [ ] Implement role/authorization checks server-side.
-- [ ] Implement geographic-scope checks if required by HVCP.
-- [ ] Ensure the browser cannot bypass role checks by directly calling Apps Script functions.
-- [ ] Implement server-side identity-resolution service.
-- [ ] Use LockService for identity review resolution, protected corrections, and merges.
+- [ ] Implement geographic-scope checks if required.
+- [ ] Ensure browser/client values cannot bypass server authorization.
+- [ ] Implement server-side identity/deduplication service.
+- [ ] Implement secure invitation token generation and hashing.
+- [ ] Implement invitation status/expiry/revocation handling.
+- [ ] Use LockService for identity review resolution, canonical merges, and critical link/submission transitions.
 
-## E. Farmer identity + RSBSA + deduplication
+## E. New farmer public intake
 
-### Intake and normalization
-
+- [ ] Public generic intake page for NEW farmers.
 - [ ] RSBSA registration-state selector.
 - [ ] Manual RSBSA entry.
-- [ ] Normalize RSBSA values using confirmed official format.
-- [ ] Normalize phone number for comparison.
-- [ ] Normalize name spacing/case/punctuation for comparison only.
-- [ ] Preserve original submitted identity values where needed for audit.
 - [ ] Mobile image capture/file picker.
 - [ ] Browser Canvas preprocessing.
 - [ ] Tesseract.js OCR.
-- [ ] Parse RSBSA number.
-- [ ] Parse farmer name.
-- [ ] User verification/edit screen.
+- [ ] Parse RSBSA number and farmer name.
+- [ ] User verification/edit step.
 - [ ] Confirm image is never uploaded/retained.
+- [ ] Capture farmer/farm/profile data.
+- [ ] Save as PENDING submission; do not immediately create an ACTIVE canonical farmer.
+- [ ] Run server-side duplicate detection before validation.
+- [ ] Never expose existing farmer candidate PII to public respondents.
+- [ ] Add public endpoint rate/abuse protections.
 
-### Duplicate detection
+## F. Existing farmer secure-link profiling
 
-- [ ] Exact normalized RSBSA lookup.
-- [ ] Add corroborating-field checks so exact RSBSA alone is not treated as unquestionable proof.
-- [ ] Add possible-match rules using name + contact + location.
-- [ ] Add conservative fuzzy-name matching for duplicate warnings only.
-- [ ] Define Tier A strong candidate / Tier B possible duplicate / Tier C weak similarity.
-- [ ] Store human-readable match reasons.
-- [ ] Do not auto-merge on any match tier.
-- [ ] Do not use a fuzzy score as proof of identity.
+- [ ] Staff search/select approved existing farmer.
+- [ ] Generate personalized profiling invitation.
+- [ ] Link invitation to farmer_id + reference period + purpose.
+- [ ] Purpose support: ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, NEW_FARM.
+- [ ] Store token hash rather than raw token where practical.
+- [ ] Support ACTIVE, SUBMITTED, RETURNED, EXPIRED, REVOKED statuses.
+- [ ] Allow safe resume while ACTIVE.
+- [ ] Lock/invalidate after final submission.
+- [ ] Staff can resend/revoke/regenerate according to HVCP-approved policy.
+- [ ] Existing farmer link loads only the permitted farmer/profile context.
+- [ ] No username/password required for farmer V1.
+- [ ] Encoder-assisted path available when farmer cannot use the link.
 
-### Farmer/respondent privacy
+## G. Time-series profiling and farm changes
 
-- [ ] Never return candidate farmer PII to a public/self-service respondent.
-- [ ] Show only a neutral "possible existing profile" message when a public duplicate is detected.
-- [ ] Prevent farmers from choosing among close/fuzzy duplicate candidates.
-- [ ] Do not expose an existing profile to a public returning farmer without approved authentication/verification.
-- [ ] Limit authenticated Encoder candidate previews to minimum necessary information.
+- [ ] Create new Profiling_Round for each annual cycle.
+- [ ] Additional Profiling_Round/event for expansion when required.
+- [ ] Preserve previous approved yearly values.
+- [ ] Separate master-data correction from new time-series observation.
+- [ ] Commodity/variety/year planted.
+- [ ] Newly planted/non-bearing/bearing tree counts.
+- [ ] Area planted.
+- [ ] Production year/volume/unit/product form.
+- [ ] Facilities/equipment snapshot/history as finalized.
+- [ ] Interventions received.
+- [ ] Intervention needs.
+- [ ] New farm/expansion structural workflow.
+- [ ] Review screen and submit.
 
-### Return-user flow
+## H. Change detection, anomaly detection, and validation
 
-- [ ] Authenticated Encoder can search authorized existing farmers.
-- [ ] Require secondary confirmation before opening/linking a strong existing match.
-- [ ] Returning farmer update creates UPDATE_PROFILE / ADD_FARM / new annual-data submission rather than a second farmer master.
-- [ ] Public/self-service returning farmer submits an update request for Validator linkage unless approved authentication exists.
-- [ ] Keep historical production/year records instead of overwriting prior years.
+- [ ] Compare incoming submission to latest approved relevant record.
+- [ ] Classify NO_CHANGE.
+- [ ] Classify MODIFICATION.
+- [ ] Classify NEW_ENTRY.
+- [ ] Classify EXPANSION.
+- [ ] Classify ANOMALY.
+- [ ] Duplicate/RSBSA conflict flags.
+- [ ] Identity correction flags.
+- [ ] Farm-area change flags.
+- [ ] Tree-count change flags.
+- [ ] Production-change flags.
+- [ ] New farm/commodity/variety flags.
+- [ ] Thresholds/rules configurable and documented.
+- [ ] Anomaly flag must not auto-reject.
+- [ ] Validator sees prior vs submitted values and reasons.
+- [ ] Approve.
+- [ ] Return for correction.
+- [ ] Confirm expansion/new farm.
+- [ ] Route identity/duplicate cases for additional review.
+- [ ] Protected identity corrections remain audited.
+- [ ] Canonical duplicate merges remain Admin-controlled and non-destructive.
 
-### Identity review and correction
-
-- [ ] Generate Identity_Reviews record for ambiguous matches.
-- [ ] Validator can resolve incoming submission as LINK_TO_EXISTING / CREATE_NEW / CONFIRMED_DIFFERENT.
-- [ ] Encoder can propose but not self-approve protected identity corrections.
-- [ ] Protected RSBSA/name correction requires approved role and audit entry.
-- [ ] Record old value, new value, reason, requester, approver, and timestamps for protected corrections.
-- [ ] Test typo in RSBSA that accidentally equals another farmer's valid RSBSA.
-- [ ] Test common-name collisions within the same barangay.
-
-### Merge and recovery
-
-- [ ] Add `merged_into_farmer_id` to Farmers.
-- [ ] Mark duplicate master record MERGED instead of deleting it.
-- [ ] Implement canonical-farmer merge transaction under LockService.
-- [ ] Re-parent affected approved child records safely during a merge.
-- [ ] Exclude merged farmer records from active counts.
-- [ ] Audit merge initiator/approver/executor/reason.
-- [ ] Implement recovery procedure for an incorrect farmer linkage.
-- [ ] Never physically delete a farmer record as normal deduplication behavior.
-
-### Final farmer creation
-
-- [ ] Create/save PENDING farmer when identity is unresolved.
-- [ ] Activate canonical farmer only after applicable validation/identity resolution.
-- [ ] Non-RSBSA farmer path.
-
-## F. Farm and location
+## I. Farm and location
 
 - [ ] Province dropdown.
 - [ ] Municipality/City cascading dropdown.
@@ -160,104 +169,65 @@
 - [ ] Save latitude/longitude.
 - [ ] Topography.
 - [ ] Road distance.
-- [ ] Save farm.
 
-## G. Coffee/Cacao profile
+## J. Dashboard/reporting
 
-- [ ] Commodity selector.
-- [ ] Variety selector.
-- [ ] Year planted.
-- [ ] Newly planted trees.
-- [ ] Non-bearing trees.
-- [ ] Bearing trees.
-- [ ] Area planted.
-- [ ] Production year/volume/unit.
-- [ ] Facilities/equipment.
-- [ ] Interventions received.
-- [ ] Intervention needs.
-- [ ] Review screen.
-- [ ] Submit.
-
-## H. Validation
-
-- [ ] Pending submission list.
-- [ ] Submission details.
-- [ ] Duplicate/identity-review queue.
-- [ ] Show match reasons and relevant candidate comparison only to authorized reviewers.
-- [ ] Validator action: link submission to existing farmer.
-- [ ] Validator action: confirm new farmer.
-- [ ] Validator action: confirm candidate is a different person.
-- [ ] Validator action: request protected identity correction.
-- [ ] Admin action: execute approved merge/protected canonical correction.
-- [ ] Approve.
-- [ ] Return for correction.
-- [ ] Reject if required by HVCP.
-- [ ] Validator remarks.
-- [ ] Audit trail.
-
-## I. Dashboard/reporting
-
-- [ ] Flattened reporting view(s).
+- [ ] Flattened reporting views.
 - [ ] Looker Studio connection.
-- [ ] Farmer totals based on canonical ACTIVE farmers only.
-- [ ] Exclude MERGED/PENDING duplicates from normal farmer totals.
-- [ ] RSBSA registration indicators.
+- [ ] Canonical active farmer totals.
 - [ ] Coffee/Cacao area.
-- [ ] Tree counts.
-- [ ] Production.
+- [ ] Tree counts by reference year.
+- [ ] Production by reference year.
 - [ ] Province/LGU/Barangay filters.
-- [ ] Variety filters.
+- [ ] Variety and year filters.
 - [ ] Farm-point map.
 - [ ] Intervention-needs summaries.
+- [ ] Annual/change/expansion indicators where useful.
 - [ ] Export-friendly view.
-- [ ] Confirm dashboards do not expose RSBSA, phone, precise address, or unnecessary PII.
+- [ ] Do not expose RSBSA, phone, precise address, token data, or unnecessary PII.
 
-## J. Testing
+## K. Testing
 
+- [ ] New-farmer public intake.
+- [ ] Existing-farmer secure invitation.
+- [ ] Invalid/expired/revoked token.
+- [ ] Token tampering / guessed IDs.
+- [ ] Reuse after submission.
+- [ ] Returned-correction access.
+- [ ] Wrong farmer cannot access another farmer's link/context.
+- [ ] Duplicate RSBSA.
+- [ ] RSBSA typo/collision.
+- [ ] Same-name different-farmer cases.
+- [ ] Annual time-series preservation.
+- [ ] Expansion flow.
+- [ ] Normal modification vs anomaly classification.
+- [ ] Large area/tree/production changes.
+- [ ] Encoder-assisted submission audit.
+- [ ] Concurrent submissions/link actions.
 - [ ] Mobile Android.
 - [ ] Desktop.
 - [ ] Slow network.
 - [ ] Invalid/blank inputs.
-- [ ] Duplicate RSBSA.
-- [ ] Exact RSBSA + conflicting name.
-- [ ] One-digit RSBSA typo.
-- [ ] RSBSA typo that collides with another valid farmer.
-- [ ] Same/similar name + same barangay.
-- [ ] Same name but genuinely different farmers.
-- [ ] Changed contact number for returning farmer.
-- [ ] Returning farmer with prior-year production.
-- [ ] Farmer cannot see fuzzy candidate list/PII.
-- [ ] Encoder cannot access out-of-scope farmer records.
-- [ ] Encoder cannot merge or approve own protected correction.
-- [ ] Validator can resolve candidate without deleting history.
-- [ ] Incorrect farmer linkage recovery.
-- [ ] Merge preserves source record and child relationships.
-- [ ] Concurrent duplicate-review/merge attempts.
-- [ ] Concurrent submissions.
-- [ ] OCR under different lighting.
-- [ ] Large image OCR performance.
-- [ ] Incorrect OCR/manual correction.
-- [ ] PSGC cascading accuracy.
-- [ ] Map coordinates.
+- [ ] OCR lighting/large-image/manual-correction tests.
+- [ ] PSGC/map accuracy.
 - [ ] Sheet write collision tests.
-- [ ] Authorization-bypass tests against direct Apps Script calls.
+- [ ] Direct Apps Script authorization-bypass tests.
 
-## K. HVCP production handover
+## L. HVCP production handover
 
-- [ ] Obtain HVCP institutional email/contact for access—not password.
+- [ ] Obtain HVCP institutional contact/access—not password.
 - [ ] Confirm Shared Drive availability.
 - [ ] Create production resources under HVCP.
 - [ ] Configure production Script Properties.
-- [ ] HVCP authorizes Google scopes.
+- [ ] HVCP authorizes required Google scopes.
 - [ ] HVCP creates production web-app deployment.
 - [ ] Connect production Looker Studio.
 - [ ] Production smoke test.
 - [x] Administrator/operations runbook.
-- [x] Technical maintainer quick command guide.
+- [x] Technical maintainer command guide.
 - [x] Role workflow documentation.
 - [x] Release and rollback documentation.
 - [x] Configuration/environment documentation.
-- [x] Handover/source documentation.
-- [ ] Add identity-review/merge procedure to final Admin guide.
+- [ ] Admin guide for generating/revoking links and reviewing anomalies.
 - [ ] Encoder quick user guide based on final UI.
-- [ ] Record final production deployment/version in internal handover record.
+- [ ] Record final production deployment/version.
