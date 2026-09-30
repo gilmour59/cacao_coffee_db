@@ -14,6 +14,9 @@ Google Sheets is used as the operational data store, but the structure is intent
 - Do not store RSBSA ID images.
 - Do not delete historical reference rows solely because a code becomes inactive.
 - Application writes should use headers, not hard-coded column numbers.
+- Candidate duplicate matching is server-side; public/respondent views must not receive other farmers' PII.
+- Fuzzy similarity is a review signal, never proof of identity.
+- Farmer merges must preserve the source record and audit trail.
 
 ## ID formats
 
@@ -28,6 +31,7 @@ Google Sheets is used as the operational data store, but the structure is intent
 | Intervention need | NED-2026-000001 |
 | Submission | SUB-2026-000001 |
 | Audit log | AUD-2026-000001 |
+| Identity review | IDR-2026-000001 |
 
 RSBSA numbers are external identifiers and must **not** replace `farmer_id`.
 
@@ -54,17 +58,25 @@ One row per farmer.
 | contact_no | text | yes | Store as text |
 | residence_address | text | yes | Residential address |
 | created_from_submission_id | text | no | Initial intake submission |
-| record_status | enum | yes | ACTIVE, INACTIVE, MERGED |
+| merged_into_farmer_id | text | no | Canonical farmer when this record has been merged |
+| record_status | enum | yes | PENDING, ACTIVE, INACTIVE, MERGED |
 | created_at | timestamp | yes | |
 | created_by | text | no | Email/user ID where available |
 | updated_at | timestamp | yes | |
 | updated_by | text | no | |
 
-### Duplicate rules
+### Identity and duplicate rules
 
-1. Exact normalized `rsbsa_no` match → strong duplicate warning.
-2. No RSBSA number → soft warning using name + contact/location where possible.
-3. Duplicate warning must allow authorized review/correction rather than blindly discarding the submission.
+1. `farmer_id` is the canonical internal identity; RSBSA remains an external identifier.
+2. Exact normalized `rsbsa_no` is a strong signal but must be corroborated before it is treated as a confirmed identity.
+3. Similar name/contact/location combinations may create duplicate-review candidates but must never auto-link or auto-merge.
+4. A public/self-service respondent must never receive a candidate list or another farmer's PII.
+5. An authenticated Encoder may use strong matches only after secondary confirmation and within authorized scope.
+6. Ambiguous matches create an `Identity_Reviews` record for Validator review.
+7. Protected identity corrections and canonical merges are role-restricted and audited.
+8. A merged farmer is retained with `record_status=MERGED` and `merged_into_farmer_id`; it is not physically deleted.
+
+See `FARMER_IDENTITY_AND_DEDUPLICATION.md`.
 
 ---
 
@@ -225,6 +237,31 @@ Tracks the validation state of one intake/update package.
 | updated_at | timestamp | yes | |
 
 This sheet lets validation happen at submission-package level rather than trying to approve individual cells.
+
+---
+
+## Identity_Reviews
+
+Tracks ambiguous identity matches, typo/correction requests, and duplicate-resolution decisions.
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| identity_review_id | text | yes | Stable ID, e.g. IDR-2026-000001 |
+| submission_id | text | yes | FK → Submissions |
+| subject_farmer_id | text | no | Pending/current farmer being reviewed |
+| candidate_farmer_id | text | no | Existing possible canonical farmer |
+| match_tier | enum | yes | STRONG, POSSIBLE, WEAK |
+| match_reasons | text | yes | Human-readable reasons, not just a numeric score |
+| review_status | enum | yes | PENDING, IN_REVIEW, RESOLVED |
+| resolution | enum | no | LINK_TO_EXISTING, CREATE_NEW, CONFIRMED_DIFFERENT, IDENTITY_CORRECTION_APPROVED, MERGE_REQUIRED, MERGED |
+| requested_by | text | no | User/email when available |
+| resolved_by | text | no | Validator/Admin |
+| resolved_at | timestamp | no | |
+| resolution_notes | text | no | Required for protected correction/merge |
+| created_at | timestamp | yes | |
+| updated_at | timestamp | yes | |
+
+Public/self-service users must never receive candidate PII from this sheet. Duplicate-resolution and merge operations are server-side and role-restricted.
 
 ---
 
