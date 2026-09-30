@@ -28,6 +28,15 @@
 - [ ] Confirm facility/equipment choices.
 - [ ] Confirm production units/product forms.
 - [ ] Confirm which fields are mandatory vs optional.
+- [ ] Confirm residence-address structure.
+- [ ] Confirm optional/additional farmer and farm attributes for V1.
+- [ ] Confirm whether total farm area is stored separately from Coffee/Cacao planted area.
+- [ ] Confirm yearly tree-count granularity (per variety/planting vs commodity vs farm).
+- [ ] Confirm whether production units/product forms may differ by commodity.
+- [ ] Confirm policy for `Other + specify` on controlled reference lists.
+- [ ] Confirm whether approved historical yearly records are locked except through audited correction.
+- [ ] Confirm anomaly-threshold ownership/rules.
+- [ ] Confirm which profiling fields may remain blank when information is unavailable.
 
 ## B. Repository and local development
 
