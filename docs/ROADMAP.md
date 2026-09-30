@@ -55,6 +55,7 @@ Milestone: **New farmer public intake and existing farmer personalized link can 
 - [ ] Existing post-harvest facilities/equipment history/snapshot behavior.
 - [ ] Assistance/interventions received.
 - [ ] Intervention needs.
+- [ ] Source of water.
 - [ ] Review screen.
 
 Milestone: **A farmer can accumulate multiple approved yearly profiling records while preserving history.**
