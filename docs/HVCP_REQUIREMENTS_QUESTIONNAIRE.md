@@ -446,33 +446,19 @@ The technical implementation details such as internal IDs, timestamps, foreign k
 
 ---
 
-## 14. Recommended V1 Farmer Profiling and Identity Workflow
+## 14. Recommended V1 Farmer Access, Annual Profiling, and Secure-Link Workflow
 
-**Recommended V1 approach: support both farmer self-service and encoder-assisted profiling.**
+**Recommended V1 workflow for HVCP confirmation**
 
-### A. Farmer self-service
+- New farmers use a **public generic intake link**. The public form does not expose existing farmer records. New submissions are checked for possible duplicates and remain subject to Validator review before becoming an approved farmer record.
+- Existing approved farmers receive a **unique secure profiling link** for a specific farmer and profiling cycle or purpose.
+- Recommended rule: **1 secure link = 1 farmer + 1 profiling cycle/purpose**.
+- Profiling is expected **yearly**, with an additional update when there is an **expansion** or other significant structural change.
+- Previous approved yearly records are preserved as **time-series data** rather than overwritten.
+- The backend compares incoming data with the latest approved record and may classify changes as normal modification, new entry, expansion, possible duplicate, or anomaly for Validator attention.
+- Farmers who cannot complete the form themselves may be assisted by an authorized Encoder.
 
-- A farmer may use the app directly to submit a new profile or an update.
-- The farmer can only work with their own information.
-- The farmer is never shown a list of similar/possible duplicate farmers.
-- For a returning farmer, an existing profile may be opened for editing only after an approved identity-verification step.
-- If identity cannot be verified strongly enough, the update is submitted for Validator linkage instead of exposing the existing record.
-
-### B. Encoder-assisted profiling
-
-- An authorized Encoder may collect/encode information on behalf of the farmer.
-- Before creating another farmer, the system/Encoder checks for an existing record.
-- A strong match still requires secondary confirmation.
-- Uncertain/fuzzy matches go to Validator review; they are not automatically linked or merged.
-
-### C. Validation and correction
-
-- The Validator decides whether an uncertain submission belongs to an existing farmer, should create a new farmer, or needs correction.
-- Protected identity corrections and confirmed duplicate-record merges are handled only by an authorized Data Administrator and are recorded in the audit trail.
-
-This approach lets farmers use the app while protecting existing farmer records from accidental or unauthorized access.
-
-Do you agree with the recommended V1 farmer profiling and identity workflow described above?
+Do you agree with the recommended V1 public-link + personalized-link profiling workflow described above?
 
 - [ ] Yes — adopt the recommended workflow
 - [ ] Yes, but with revisions
@@ -485,39 +471,84 @@ ____________________________________________________________
 ____________________________________________________________
 ```
 
-Which V1 access approach should be used?
+For **NEW farmers**, should V1 use one public generic intake link, with submissions checked and validated before an approved farmer record is created?
 
-- [ ] Both farmer self-service and encoder-assisted profiling (recommended)
-- [ ] Farmer self-service only
-- [ ] Encoder-assisted profiling only
+- [ ] Yes — use a public new-farmer intake link
+- [ ] Yes, but the public-link process needs revisions
+- [ ] No — use another process
 - [ ] Other: ____________________________________________
 
-If farmers should be able to view/update an existing profile directly, what approved verification method is available?
+For **EXISTING farmers**, should each profiling cycle/update use a unique secure link tied to only that farmer and that profiling purpose?
 
-- [ ] Verified mobile number / OTP
-- [ ] Authenticated Google/DA account
-- [ ] Assisted verification by authorized staff
-- [ ] No mechanism decided yet
+- [ ] Yes — one secure link per farmer per profiling cycle/purpose
+- [ ] No — use another approach
 - [ ] Other: ____________________________________________
 
-Before an existing farmer profile is opened or linked, which information should be used as secondary confirmation in addition to the RSBSA number?
+Please confirm the expected profiling schedule:
 
-- [ ] Farmer name
-- [ ] Contact number
-- [ ] Residence/farm location
-- [ ] RSBSA ID presented during assisted profiling
+- [ ] Yearly, with additional profiling/update when there is an expansion
+- [ ] Yearly only
+- [ ] Another schedule
 - [ ] Other: ____________________________________________
 
-Who should approve corrections to key identity information such as an RSBSA number or farmer name after the profile has already been approved?
+How should personalized profiling links normally be sent to existing farmers? Select all that apply.
 
-- [ ] Validator
+- [ ] SMS/text message
+- [ ] Messenger
+- [ ] Email
+- [ ] Opened or sent by authorized HVCP/LGU staff during assisted profiling
+- [ ] Other: ____________________________________________
+
+Who should be authorized to generate, resend, or revoke an existing farmer's secure profiling link?
+
 - [ ] Data Administrator
-- [ ] Encoder may propose; Validator/Admin must approve
+- [ ] Validator
+- [ ] Authorized Encoder
 - [ ] Other: ____________________________________________
 
-Who should be authorized to merge two farmer records confirmed to represent the same person?
+If a farmer cannot complete the link-based form on their own, should an authorized Encoder be allowed to encode the profiling information on the farmer's behalf?
 
-- [ ] Data Administrator only
-- [ ] Validator or Data Administrator
+- [ ] Yes — allow Encoder-assisted profiling
+- [ ] No
 - [ ] Other: ____________________________________________
+
+Should **all** new/annual/expansion submissions pass through Validator review, or should only flagged submissions require review?
+
+- [ ] All submissions should be reviewed by a Validator
+- [ ] Only flagged or exception submissions should require Validator review
+- [ ] New farmers should always be reviewed; existing annual updates may use exception-based review
+- [ ] Other: ____________________________________________
+
+Which changes should the system specifically flag for Validator attention? Select all that apply.
+
+- [ ] Possible duplicate farmer or RSBSA conflict
+- [ ] Change to farmer name or RSBSA information
+- [ ] Large change in farm area
+- [ ] Large change in tree counts
+- [ ] Unusual change in production
+- [ ] New farm or farm expansion
+- [ ] New commodity or variety not previously recorded
+- [ ] Other: ____________________________________________
+
+If a Validator returns a submission for correction, how should the farmer regain access?
+
+- [ ] Reactivate the same secure link
+- [ ] Generate a new correction link
+- [ ] Either method is acceptable
+- [ ] Other: ____________________________________________
+
+How long should an unused personalized profiling link remain valid before staff must issue a new one?
+
+- [ ] 7 days
+- [ ] 14 days
+- [ ] 30 days
+- [ ] Until the end of the profiling period unless revoked
+- [ ] Other: ____________________________________________
+
+For an expansion update, what should HVCP consider an **expansion**? Please describe the operational rule or examples.
+
+```text
+____________________________________________________________
+____________________________________________________________
+```
 
