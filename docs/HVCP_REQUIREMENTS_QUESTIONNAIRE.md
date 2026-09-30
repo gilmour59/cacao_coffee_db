@@ -443,9 +443,32 @@ The technical implementation details such as internal IDs, timestamps, foreign k
 
 ---
 
-## 14. Farmer Access and Identity Corrections
+## 14. Recommended V1 Farmer Profiling and Identity Workflow
 
-These questions determine how returning farmers, duplicate checks, and corrections to key identity information should be handled securely.
+**Recommended V1 workflow for HVCP review**
+
+1. The farmer provides information to an authorized Encoder.
+2. Before creating a new farmer, the Encoder/system checks whether a matching farmer already exists.
+3. RSBSA, name, contact, and location may be used to detect possible matches.
+4. A strong match still requires secondary confirmation before an existing profile is used.
+5. If the match is uncertain, the farmer is **not shown other farmer records**. The case goes to a Validator for review.
+6. The Validator decides whether to link the submission to an existing farmer, create a new farmer, or return it for correction.
+7. Confirmed duplicate-record merges or protected identity corrections are handled only by an authorized Data Administrator and are recorded in the audit trail.
+
+This approach is intended to reduce duplicate records, prevent accidental access to another farmer's profile, and preserve correction history.
+
+Do you agree with the recommended V1 farmer profiling and identity workflow described above?
+
+- [ ] Yes — adopt the recommended workflow
+- [ ] Yes, but with revisions
+- [ ] No — use a different workflow
+
+If revisions or a different workflow are preferred, please describe them:
+
+```text
+____________________________________________________________
+____________________________________________________________
+```
 
 How will farmers normally use the system?
 
