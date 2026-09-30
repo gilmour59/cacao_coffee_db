@@ -28,6 +28,9 @@
 - [ ] Confirm facility/equipment choices.
 - [ ] Confirm production units/product forms.
 - [ ] Confirm which fields are mandatory vs optional.
+- [x] Source of water is a required farm input.
+- [ ] Confirm whether one farm may have multiple water sources.
+- [ ] Confirm official source-of-water categories for reporting/reference data.
 - [x] Use structured residence address: Province → Municipality/City → Barangay + local address detail.
 - [ ] Confirm which lower-level residence address details HVCP wants (Sitio/Purok/Zone, Street/Road, House/Lot/Block, landmark, etc.).
 - [ ] Confirm optional/additional farmer and farm attributes for V1.
@@ -72,7 +75,7 @@
 - [ ] Add Identity_Reviews.
 - [ ] Add Users.
 - [ ] Add Audit_Log.
-- [ ] Add all reference sheets.
+- [ ] Add all reference sheets, including Ref_Water_Sources.
 - [ ] Format IDs/PSGC codes as Plain text.
 - [ ] Protect system-generated and canonical identity columns.
 - [ ] Load Region VI PSGC reference data.
@@ -179,6 +182,7 @@
 - [ ] Save latitude/longitude.
 - [ ] Topography.
 - [ ] Road distance.
+- [ ] Source of water.
 
 ## J. Dashboard/reporting
 
