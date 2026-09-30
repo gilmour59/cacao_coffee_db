@@ -142,13 +142,16 @@ ____________________________________________________________
 
 ## 8. User Roles and Validation
 
-Current proposed roles:
+Proposed participants/roles:
 
-- Encoder
-- Validator
-- Admin
+- **Farmer / Respondent** — the person being profiled. The farmer may use the app directly to submit their own profile/update if HVCP allows self-service. A farmer must never be able to browse or view another farmer's record.
+- **Encoder** — authorized HVCP/LGU/data-collection staff who may encode or update information on behalf of a farmer and search authorized existing records.
+- **Validator** — authorized reviewer who checks submitted profiles, corrections, and possible duplicate cases before approval.
+- **Data Administrator** — manages users/reference data and handles protected identity corrections or confirmed duplicate-record merges.
 
-Are these sufficient?
+One person may hold more than one staff role depending on HVCP policy, but the permissions remain separate.
+
+Are these proposed roles/participants sufficient?
 
 - [ ] Yes
 - [ ] No
@@ -445,17 +448,29 @@ The technical implementation details such as internal IDs, timestamps, foreign k
 
 ## 14. Recommended V1 Farmer Profiling and Identity Workflow
 
-**Recommended V1 workflow for HVCP review**
+**Recommended V1 approach: support both farmer self-service and encoder-assisted profiling.**
 
-1. The farmer provides information to an authorized Encoder.
-2. Before creating a new farmer, the Encoder/system checks whether a matching farmer already exists.
-3. RSBSA, name, contact, and location may be used to detect possible matches.
-4. A strong match still requires secondary confirmation before an existing profile is used.
-5. If the match is uncertain, the farmer is **not shown other farmer records**. The case goes to a Validator for review.
-6. The Validator decides whether to link the submission to an existing farmer, create a new farmer, or return it for correction.
-7. Confirmed duplicate-record merges or protected identity corrections are handled only by an authorized Data Administrator and are recorded in the audit trail.
+### A. Farmer self-service
 
-This approach is intended to reduce duplicate records, prevent accidental access to another farmer's profile, and preserve correction history.
+- A farmer may use the app directly to submit a new profile or an update.
+- The farmer can only work with their own information.
+- The farmer is never shown a list of similar/possible duplicate farmers.
+- For a returning farmer, an existing profile may be opened for editing only after an approved identity-verification step.
+- If identity cannot be verified strongly enough, the update is submitted for Validator linkage instead of exposing the existing record.
+
+### B. Encoder-assisted profiling
+
+- An authorized Encoder may collect/encode information on behalf of the farmer.
+- Before creating another farmer, the system/Encoder checks for an existing record.
+- A strong match still requires secondary confirmation.
+- Uncertain/fuzzy matches go to Validator review; they are not automatically linked or merged.
+
+### C. Validation and correction
+
+- The Validator decides whether an uncertain submission belongs to an existing farmer, should create a new farmer, or needs correction.
+- Protected identity corrections and confirmed duplicate-record merges are handled only by an authorized Data Administrator and are recorded in the audit trail.
+
+This approach lets farmers use the app while protecting existing farmer records from accidental or unauthorized access.
 
 Do you agree with the recommended V1 farmer profiling and identity workflow described above?
 
@@ -470,12 +485,11 @@ ____________________________________________________________
 ____________________________________________________________
 ```
 
-How will farmers normally use the system?
+Which V1 access approach should be used?
 
-- [ ] Farmers provide information to an authorized Encoder; farmers do not directly access existing profiles
-- [ ] Farmers may submit data themselves, but should not directly view an existing profile
-- [ ] Farmers should be able to securely return and view/update their existing profile
-- [ ] Combination of the above
+- [ ] Both farmer self-service and encoder-assisted profiling (recommended)
+- [ ] Farmer self-service only
+- [ ] Encoder-assisted profiling only
 - [ ] Other: ____________________________________________
 
 If farmers should be able to view/update an existing profile directly, what approved verification method is available?
@@ -506,3 +520,4 @@ Who should be authorized to merge two farmer records confirmed to represent the 
 - [ ] Data Administrator only
 - [ ] Validator or Data Administrator
 - [ ] Other: ____________________________________________
+
