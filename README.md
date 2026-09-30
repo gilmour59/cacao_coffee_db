@@ -34,23 +34,60 @@ Working MVP for the October 22, 2026 presentation.
 
 ## Environment strategy
 
-Development and testing happen under the developer's Google account. Production will be recreated/deployed under the HVCP account after UAT.
+The system intentionally uses only two environments:
 
 ```text
-GitHub source
+GitHub main
    ├── TEST Apps Script → TEST Google Sheet
    └── PROD Apps Script → HVCP Google Sheet
 ```
 
-Environment-specific IDs and settings must be stored in Apps Script Properties and must never be committed to GitHub.
+Development and testing may initially happen under the developer's Google account. Production is recreated/deployed under HVCP ownership after UAT.
+
+Environment-specific IDs and settings are stored in Apps Script Script Properties and local clasp project files. They must never be hard-coded into the application source.
+
+## Maintenance and CI/CD philosophy
+
+The turnover workflow is intentionally simple:
+
+```text
+Change source
+    ↓
+GitHub main
+    ↓
+TEST push
+    ↓
+human verification
+    ↓
+immutable Apps Script version
+    ↓
+update existing PROD deployment
+    ↓
+same production URL
+```
+
+Production is **not automatically deployed from GitHub**. An authorized maintainer deliberately promotes a tested version. This keeps the process understandable and reduces credential/automation overhead for HVCP/Cacao staff.
+
+The project pins `@google/clasp` in `package.json` and provides short npm commands for TEST, PROD, releases, and rollback.
+
+See:
+
+- [Operations and Handover Runbook](docs/OPERATIONS_RUNBOOK.md)
+- [Quick Command Reference](docs/QUICK_COMMANDS.md)
+- [Release and Rollback Guide](docs/RELEASE_AND_ROLLBACK.md)
+- [Configuration and Environments](docs/CONFIGURATION_AND_ENVIRONMENTS.md)
+- [Role Workflows](docs/ROLE_WORKFLOWS.md)
 
 ## Repository structure
 
 ```text
 .
 ├── README.md
+├── package.json
 ├── .gitignore
 ├── .clasp.json.example
+├── .clasp.test.json.example
+├── .clasp.prod.json.example
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── DATABASE_SCHEMA.md
@@ -58,7 +95,12 @@ Environment-specific IDs and settings must be stored in Apps Script Properties a
 │   ├── RSBSA_OCR.md
 │   ├── ROADMAP.md
 │   ├── TODO.md
-│   └── MIGRATION_TO_HVCP.md
+│   ├── MIGRATION_TO_HVCP.md
+│   ├── OPERATIONS_RUNBOOK.md
+│   ├── ROLE_WORKFLOWS.md
+│   ├── CONFIGURATION_AND_ENVIRONMENTS.md
+│   ├── RELEASE_AND_ROLLBACK.md
+│   └── QUICK_COMMANDS.md
 └── src/
     ├── appsscript.json
     ├── Code.gs
@@ -77,6 +119,19 @@ Environment-specific IDs and settings must be stored in Apps Script Properties a
 ## Important data rule
 
 This repository must contain **source code and documentation only**. Never commit real farmer records, RSBSA ID images, contact details, addresses, GPS coordinates, OAuth credentials, tokens, API keys, or production exports.
+
+## Important operations rules
+
+1. **GitHub `main` is the source of truth.**
+2. **TEST before PROD.**
+3. **Keep TEST and PROD databases separate.**
+4. **Do not request or share the HVCP Google password.**
+5. **HVCP owns the final production Apps Script deployment and Google Sheet.**
+6. **Use the existing production deployment ID for updates so the live URL stays unchanged.**
+7. **Use Apps Script versions for rollback.**
+8. **Reference-data-only changes normally do not require a code deployment.**
+9. **Back up the production Sheet before schema-changing releases.**
+10. **Never store RSBSA ID photos.**
 
 ## Status
 
