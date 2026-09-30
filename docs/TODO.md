@@ -28,7 +28,8 @@
 - [ ] Confirm facility/equipment choices.
 - [ ] Confirm production units/product forms.
 - [ ] Confirm which fields are mandatory vs optional.
-- [ ] Confirm residence-address structure.
+- [x] Use structured residence address: Province → Municipality/City → Barangay + local address detail.
+- [ ] Confirm which lower-level residence address details HVCP wants (Sitio/Purok/Zone, Street/Road, House/Lot/Block, landmark, etc.).
 - [ ] Confirm optional/additional farmer and farm attributes for V1.
 - [ ] Confirm whether total farm area is stored separately from Coffee/Cacao planted area.
 - [ ] Confirm yearly tree-count granularity (per variety/planting vs commodity vs farm).
