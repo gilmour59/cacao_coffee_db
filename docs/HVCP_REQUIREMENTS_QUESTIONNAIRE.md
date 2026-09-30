@@ -439,3 +439,47 @@ Will the same farmer/farm profile be updated over succeeding years?
 ---
 
 The technical implementation details such as internal IDs, timestamps, foreign keys, audit IDs, PSGC storage rules, and system-generated fields are intentionally **not asked of HVCP respondents**. They will be derived from the confirmed operational answers and maintained in the technical data model.
+
+
+---
+
+## 14. Farmer Access and Identity Corrections
+
+These questions determine how returning farmers, duplicate checks, and corrections to key identity information should be handled securely.
+
+How will farmers normally use the system?
+
+- [ ] Farmers provide information to an authorized Encoder; farmers do not directly access existing profiles
+- [ ] Farmers may submit data themselves, but should not directly view an existing profile
+- [ ] Farmers should be able to securely return and view/update their existing profile
+- [ ] Combination of the above
+- [ ] Other: ____________________________________________
+
+If farmers should be able to view/update an existing profile directly, what approved verification method is available?
+
+- [ ] Verified mobile number / OTP
+- [ ] Authenticated Google/DA account
+- [ ] Assisted verification by authorized staff
+- [ ] No mechanism decided yet
+- [ ] Other: ____________________________________________
+
+Before an existing farmer profile is opened or linked, which information should be used as secondary confirmation in addition to the RSBSA number?
+
+- [ ] Farmer name
+- [ ] Contact number
+- [ ] Residence/farm location
+- [ ] RSBSA ID presented during assisted profiling
+- [ ] Other: ____________________________________________
+
+Who should approve corrections to key identity information such as an RSBSA number or farmer name after the profile has already been approved?
+
+- [ ] Validator
+- [ ] Data Administrator
+- [ ] Encoder may propose; Validator/Admin must approve
+- [ ] Other: ____________________________________________
+
+Who should be authorized to merge two farmer records confirmed to represent the same person?
+
+- [ ] Data Administrator only
+- [ ] Validator or Data Administrator
+- [ ] Other: ____________________________________________
