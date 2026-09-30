@@ -77,6 +77,8 @@ See:
 - [Release and Rollback Guide](docs/RELEASE_AND_ROLLBACK.md)
 - [Configuration and Environments](docs/CONFIGURATION_AND_ENVIRONMENTS.md)
 - [Role Workflows](docs/ROLE_WORKFLOWS.md)
+- [Secure Link Profiling Flow](docs/SECURE_LINK_PROFILING_FLOW.md)
+- [Profiling Swimlane Diagrams](docs/PROFILING_SWIMLANE.md)
 - [HVCP Requirements Questionnaire](docs/HVCP_REQUIREMENTS_QUESTIONNAIRE.md)
 
 ## Repository structure
