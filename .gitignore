@@ -1,4 +1,7 @@
 .clasp.json
+.clasp.test.json
+.clasp.prod.json
+.clasprc.json
 .env
 .env.*
 !.env.example
