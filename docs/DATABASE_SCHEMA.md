@@ -56,7 +56,10 @@ One row per farmer.
 | suffix | text | no | Jr., Sr., III, etc. |
 | sex | text/ref | yes | Final values to be confirmed with HVCP |
 | contact_no | text | yes | Store as text |
-| residence_address | text | yes | Residential address |
+| residence_province_code | text | yes | PSGC FK → Ref_Provinces |
+| residence_lgu_code | text | yes | PSGC FK → Ref_LGUs |
+| residence_barangay_code | text | yes | PSGC FK → Ref_Barangays |
+| residence_address_detail | text | yes | Local address detail after Barangay; exact components pending HVCP confirmation |
 | created_from_submission_id | text | no | Initial intake submission |
 | merged_into_farmer_id | text | no | Canonical farmer when this record has been merged |
 | record_status | enum | yes | PENDING, ACTIVE, INACTIVE, MERGED |
@@ -106,6 +109,25 @@ One farmer may have multiple farms.
 | updated_by | text | no | |
 
 The latitude/longitude point is for approximate spatial orientation only and is not a parcel boundary.
+
+---
+
+## Farm_Water_Sources
+
+Source of water is a required farm profiling input. It is modeled as a repeatable controlled value so the system can support either one primary source or multiple sources without redesigning the database.
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| farm_water_source_id | text | yes | Stable internal ID |
+| farm_id | text | yes | FK → Farms |
+| submission_id | text | no | Submission/profile event that supplied the value |
+| water_source_code | text | yes | FK → Ref_Water_Sources |
+| is_primary | boolean | no | Useful if HVCP permits multiple sources |
+| remarks | text | no | Optional details |
+| created_at | timestamp | yes | |
+| updated_at | timestamp | yes | |
+
+HVCP must confirm the official source-of-water categories and whether a farm may report more than one source.
 
 ---
 
@@ -353,6 +375,12 @@ Do not hard-code facility/equipment choices in JavaScript.
 
 HVCP must confirm whether production should be recorded in kg, metric tons, or another commodity-specific basis.
 
+## Ref_Water_Sources
+
+`water_source_code, water_source_name, is_active, sort_order`
+
+Source-of-water categories must be confirmed by HVCP and should not be hard-coded in the client.
+
 ---
 
 # Minimum HVCP fields covered
@@ -379,6 +407,7 @@ The schema includes all current requested collection fields:
 - Assistance/intervention received
 - Existing post-harvest facility/equipment
 - Distance of farm area to road access (km)
+- Source of water
 - Interventions needed
 - RSBSA status/number and verification flow (added)
 
