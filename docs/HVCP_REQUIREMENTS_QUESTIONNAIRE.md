@@ -552,3 +552,89 @@ ____________________________________________________________
 ____________________________________________________________
 ```
 
+
+
+---
+
+## 15. Final Data Dictionary and Validation Clarifications
+
+These final questions confirm field structure, optional attributes, historical-data handling, and validation rules needed before the V1 database schema is frozen. Technical storage types such as text, number, date, internal IDs, and code formats will be handled by the development team based on these operational answers.
+
+How should the farmer's residence address be recorded?
+
+- [ ] Structured Province / Municipality or City / Barangay plus free-text Sitio/Purok/Street
+- [ ] One free-text residence address only
+- [ ] Other: ____________________________________________
+
+Which additional farmer/farm attributes, if any, should be included in V1? Select all that apply.
+
+- [ ] Email address
+- [ ] Alternate contact number
+- [ ] Farmer association/cooperative membership
+- [ ] Farm ownership/tenure status
+- [ ] Total farm area, separate from Coffee/Cacao planted area
+- [ ] Farm name/local identifier
+- [ ] None — no additional attributes are needed
+- [ ] Other: ____________________________________________
+
+Should the system store both **total farm area** and the area specifically planted to Coffee/Cacao?
+
+- [ ] Yes — store both
+- [ ] No — Coffee/Cacao planted area is sufficient
+- [ ] Not sure / please recommend
+- [ ] Other: ____________________________________________
+
+At what level should yearly tree counts (newly planted, non-bearing, bearing) be recorded?
+
+- [ ] Per variety/planting
+- [ ] Per commodity per farm
+- [ ] Total per farm
+- [ ] Other: ____________________________________________
+
+Should production units and product forms be allowed to differ between Coffee and Cacao?
+
+- [ ] Yes — Coffee and Cacao may use different units/forms
+- [ ] No — use one common unit/form structure
+- [ ] Not sure / please recommend
+- [ ] Other: ____________________________________________
+
+For controlled lists such as variety, topography, facility/equipment, and intervention type, should users be allowed to choose **Other** and specify a value not yet in the official list?
+
+- [ ] Yes — allow Other + specify, subject to review
+- [ ] No — only approved reference values may be selected
+- [ ] Allow Other only for selected lists
+- [ ] Other: ____________________________________________
+
+Should previously approved yearly profiling records remain locked and preserved as history, except through a documented correction process?
+
+- [ ] Yes — preserve approved historical records
+- [ ] No — authorized users may directly edit prior approved records
+- [ ] Other: ____________________________________________
+
+If an approved historical value is later found to be wrong, should the system keep an audit trail of the original value, corrected value, reason, and approver?
+
+- [ ] Yes
+- [ ] No
+- [ ] Other: ____________________________________________
+
+For anomaly detection (for example, unusually large changes in area, tree counts, or production), how should the initial thresholds be determined?
+
+- [ ] HVCP will provide the threshold/rules
+- [ ] Development team may propose initial rules for HVCP review and UAT
+- [ ] Use both HVCP rules and development-team recommendations
+- [ ] Do not use automatic threshold-based anomaly flags in V1
+- [ ] Other: ____________________________________________
+
+Which profiling fields may be left blank when the information is genuinely unavailable? Please list them, or write **None** if all required profiling fields must be completed.
+
+```text
+____________________________________________________________
+____________________________________________________________
+```
+
+Are there any other farmer, farm, Coffee/Cacao, production, facility, intervention, or reporting fields that HVCP needs but are not yet listed in this questionnaire?
+
+```text
+____________________________________________________________
+____________________________________________________________
+```
