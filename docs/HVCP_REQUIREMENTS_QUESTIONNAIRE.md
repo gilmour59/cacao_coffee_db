@@ -3,7 +3,7 @@
 
 **Target MVP Presentation:** October 22, 2026
 
-This questionnaire is intended to confirm the remaining operational and data requirements needed to finalize the first version of the Coffee and Cacao Farmer Profiling and Information Management System.
+This questionnaire is intended to confirm the remaining operational, data-capture, validation, reporting, and record-structure requirements needed to finalize the first version of the Coffee and Cacao Farmer Profiling and Information Management System.
 
 ---
 
@@ -79,49 +79,14 @@ Can one farm contain **both Coffee and Cacao**?
 
 ## 5. Coffee and Cacao Reference Lists
 
-Please provide or confirm the official/current values for the following:
+Please provide or confirm the official/current values for:
 
-**Coffee varieties/types**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
-
-**Cacao varieties/types**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
-
-**Topography classifications**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
-
-**Post-harvest facilities/equipment**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
-
-**Assistance/interventions received**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
-
-**Intervention needs**
-
-```text
-____________________________________________________________
-____________________________________________________________
-```
+- Coffee varieties/types
+- Cacao varieties/types
+- Topography classifications
+- Post-harvest facilities/equipment categories
+- Assistance/interventions received categories
+- Intervention needs categories
 
 ---
 
@@ -306,19 +271,171 @@ ____________________________________________________________
 
 ---
 
-## Development Notes
+## 13. Additional Data Capture and Record Structure
 
-The following design decisions are currently assumed unless HVCP requests otherwise:
+These questions confirm how HVCP wants farmer, farm, planting, production, facility, intervention, user-access, and update records organized.
 
-- Google Apps Script + Google Sheets for V1
-- Client-side RSBSA OCR using Tesseract.js
-- No RSBSA ID image retention
-- One farmer may have multiple farms
-- Approximate farm point using Leaflet/OpenStreetMap
-- PSA PSGC codes for Province → Municipality/City → Barangay
-- TEST and PROD environments kept separate
-- Production owned by HVCP/institutional account
-- GitHub as source of truth for application code
-- Human-approved production releases with versioned rollback
+### Farmer details
 
-Any answer that differs from these assumptions should be reflected in the database schema, UI, workflow, or deployment configuration before final production release.
+How should the farmer's name be recorded?
+
+- [ ] Separate fields: First Name, Middle Name, Last Name, Suffix
+- [ ] One Full Name field only
+- [ ] Other: ____________________________________________
+
+What official Sex/Gender choices should be available?
+
+```text
+____________________________________________________________
+```
+
+### Planting and crop profile
+
+Should the following all be captured for each Coffee/Cacao planting?
+
+- variety
+- year planted
+- newly planted trees (less than 1 year)
+- non-bearing trees
+- bearing trees
+- area planted
+
+- [ ] Yes, capture all of them
+- [ ] No, some should be changed or removed
+
+If any should be changed, removed, or added:
+
+```text
+____________________________________________________________
+```
+
+What unit should be used for area planted?
+
+- [ ] Hectares (ha)
+- [ ] Square meters (m²)
+- [ ] Other: ____________________________________________
+
+Can one farm have multiple varieties of Coffee and/or multiple varieties of Cacao?
+
+- [ ] Yes
+- [ ] No
+
+### Production history and level of detail
+
+How should production be recorded in relation to the farm?
+
+- [ ] Per variety/planting
+- [ ] Per commodity per farm
+- [ ] Total per farmer
+- [ ] Other: ____________________________________________
+
+Should the system keep production records for multiple years?
+
+- [ ] Keep multiple years / historical production
+- [ ] Current reporting year only
+- [ ] Other: ____________________________________________
+
+### Facilities and equipment
+
+Which additional facility/equipment details should be recorded?
+
+- [ ] Quantity
+- [ ] Capacity
+- [ ] Model/Description
+- [ ] Condition/Status
+- [ ] No additional details needed
+- [ ] Other: ____________________________________________
+
+Should the system allow an explicit **None** when a farmer/farm has no post-harvest facility or equipment?
+
+- [ ] Yes
+- [ ] No
+
+### Interventions
+
+For assistance/interventions already received, should the system record:
+
+- [ ] Both provider/source and year received
+- [ ] Provider/source only
+- [ ] Year received only
+- [ ] Neither
+
+Should intervention needs have a priority level?
+
+- [ ] Yes — Low / Medium / High
+- [ ] Yes — another priority scale
+- [ ] No priority level needed
+
+If another priority scale is preferred:
+
+```text
+____________________________________________________________
+```
+
+Should facilities, interventions received, and intervention needs be recorded:
+
+- [ ] Per farm
+- [ ] Once per farmer
+- [ ] It depends on the item/type
+- [ ] Other: ____________________________________________
+
+### Farm access and location capture
+
+Should distance from the farm area to road access be recorded in kilometers?
+
+- [ ] Yes, kilometers (km)
+- [ ] No, use another unit
+- [ ] This field is not needed
+
+Should encoders be allowed to use device GPS in addition to manually placing the farm point on the map?
+
+- [ ] Yes — allow both device GPS and map pin
+- [ ] Map pin only
+- [ ] Device GPS only
+
+### Duplicate, update, and validation behavior
+
+If an RSBSA number already exists in the system, what should happen?
+
+- [ ] Show the existing farmer record and allow authorized review/update
+- [ ] Block creation of another record
+- [ ] Allow a new record but flag it as a possible duplicate
+- [ ] Other: ____________________________________________
+
+After a profile has been approved, should later updates go through validation again?
+
+- [ ] Yes, updates should be validated again
+- [ ] No, authorized users may update approved records directly
+- [ ] Other: ____________________________________________
+
+Should the validation workflow include a separate **Rejected** status?
+
+- [ ] Approved / Returned only
+- [ ] Include Rejected
+- [ ] Other: ____________________________________________
+
+### User access and record history
+
+Should user access be limited by assigned geographic area?
+
+- [ ] Yes — restrict by Province and/or Municipality/City
+- [ ] No — authorized users may access all Region VI records
+- [ ] Depends on the user role
+- [ ] Other: ____________________________________________
+
+Should the system retain a history/audit trail of important profile changes and validation actions?
+
+- [ ] Yes
+- [ ] No
+- [ ] Not sure / please recommend
+
+Will the same farmer/farm profile be updated over succeeding years?
+
+- [ ] Updated regularly over succeeding years
+- [ ] One-time profiling only
+- [ ] Not yet decided
+- [ ] Other: ____________________________________________
+
+---
+
+The technical implementation details such as internal IDs, timestamps, foreign keys, audit IDs, PSGC storage rules, and system-generated fields are intentionally **not asked of HVCP respondents**. They will be derived from the confirmed operational answers and maintained in the technical data model.
