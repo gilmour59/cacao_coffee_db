@@ -560,10 +560,13 @@ ____________________________________________________________
 
 These final questions confirm field structure, optional attributes, historical-data handling, and validation rules needed before the V1 database schema is frozen. Technical storage types such as text, number, date, internal IDs, and code formats will be handled by the development team based on these operational answers.
 
-How should the farmer's residence address be recorded?
+Residence address will use **structured Province → Municipality/City → Barangay fields**. Which additional local address details should also be captured? Select all that apply.
 
-- [ ] Structured Province / Municipality or City / Barangay plus free-text Sitio/Purok/Street
-- [ ] One free-text residence address only
+- [ ] Sitio / Purok / Zone
+- [ ] Street / Road
+- [ ] House / Lot / Block number
+- [ ] Landmark / additional address detail
+- [ ] No additional structured field; one local address-detail field is enough after Barangay
 - [ ] Other: ____________________________________________
 
 Which additional farmer/farm attributes, if any, should be included in V1? Select all that apply.
