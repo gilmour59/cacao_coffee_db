@@ -641,3 +641,19 @@ Are there any other farmer, farm, Coffee/Cacao, production, facility, interventi
 ____________________________________________________________
 ____________________________________________________________
 ```
+
+
+Source of water will be included as a **farm-level input**. Can one farm have more than one source of water?
+
+- [ ] Yes — allow multiple water sources per farm
+- [ ] No — record one primary water source per farm
+- [ ] Other: ____________________________________________
+
+Please provide or confirm the **official source-of-water categories** that should be available in the system.
+
+Examples may include rainfed, spring, river/creek, well, irrigation system, pond/reservoir, or other categories used by HVCP. Please use the terms HVCP wants reflected in reports.
+
+```text
+____________________________________________________________
+____________________________________________________________
+```
