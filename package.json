@@ -1,0 +1,28 @@
+{
+  "name": "cacao-coffee-db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HVCP Coffee and Cacao Farmer Profiling and Information Management System",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@google/clasp": "3.4.1"
+  },
+  "scripts": {
+    "auth:whoami": "clasp show-authorized-user",
+    "test:status": "clasp -P .clasp.test.json show-file-status",
+    "test:push": "clasp -P .clasp.test.json push",
+    "test:pull": "clasp -P .clasp.test.json pull",
+    "test:open": "clasp -P .clasp.test.json open-script",
+    "test:deployments": "clasp -P .clasp.test.json list-deployments",
+    "prod:status": "clasp -P .clasp.prod.json show-file-status",
+    "prod:push": "clasp -P .clasp.prod.json push",
+    "prod:pull": "clasp -P .clasp.prod.json pull",
+    "prod:open": "clasp -P .clasp.prod.json open-script",
+    "prod:versions": "clasp -P .clasp.prod.json list-versions",
+    "prod:deployments": "clasp -P .clasp.prod.json list-deployments",
+    "prod:version": "clasp -P .clasp.prod.json create-version",
+    "prod:deploy": "clasp -P .clasp.prod.json create-deployment"
+  }
+}
