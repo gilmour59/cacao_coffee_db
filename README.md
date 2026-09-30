@@ -77,6 +77,7 @@ See:
 - [Release and Rollback Guide](docs/RELEASE_AND_ROLLBACK.md)
 - [Configuration and Environments](docs/CONFIGURATION_AND_ENVIRONMENTS.md)
 - [Role Workflows](docs/ROLE_WORKFLOWS.md)
+- [HVCP Requirements Questionnaire](docs/HVCP_REQUIREMENTS_QUESTIONNAIRE.md)
 
 ## Repository structure
 
@@ -98,6 +99,7 @@ See:
 │   ├── MIGRATION_TO_HVCP.md
 │   ├── OPERATIONS_RUNBOOK.md
 │   ├── ROLE_WORKFLOWS.md
+│   ├── HVCP_REQUIREMENTS_QUESTIONNAIRE.md
 │   ├── CONFIGURATION_AND_ENVIRONMENTS.md
 │   ├── RELEASE_AND_ROLLBACK.md
 │   └── QUICK_COMMANDS.md
