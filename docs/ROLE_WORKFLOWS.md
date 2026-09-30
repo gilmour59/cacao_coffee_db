@@ -57,6 +57,12 @@ submit
 
 The system must never require storage of the RSBSA ID image.
 
+### Identity privacy
+
+A farmer/respondent must never be shown a list of similar farmer records or another farmer's PII. If a possible existing profile is detected, show only a neutral message and route the case for authorized review.
+
+If farmers directly use a public/self-service version of the app, an existing farmer profile must not be exposed for viewing/editing unless HVCP provides an approved authentication or secondary-verification mechanism.
+
 ---
 
 ## 2. Encoder
@@ -87,7 +93,9 @@ Typical users:
 - add intervention needs;
 - review a draft;
 - submit for validation;
-- correct a submission returned by a Validator.
+- correct a submission returned by a Validator;
+- search/open authorized existing farmer profiles where policy allows;
+- use a strong existing match only after secondary confirmation.
 
 ### Encoder should not
 
@@ -96,7 +104,10 @@ Typical users:
 - deploy production;
 - edit stable reference codes;
 - delete historical records;
-- access GitHub deployment credentials.
+- access GitHub deployment credentials;
+- choose a fuzzy duplicate candidate as final identity;
+- merge farmer records;
+- approve their own protected RSBSA/name correction.
 
 ---
 
@@ -166,7 +177,9 @@ Rejection should not silently delete submitted information.
 - modify clasp configuration;
 - modify GitHub;
 - alter production schema;
-- change official reference codes without Admin approval.
+- change official reference codes without Admin approval;
+- expose duplicate-candidate PII to the farmer/respondent;
+- physically delete a duplicate farmer record.
 
 ---
 
@@ -190,7 +203,11 @@ This is an operational/data role, not automatically a software developer role.
 - review audit history;
 - maintain Looker Studio/report access;
 - coordinate PSGC/reference updates;
-- approve schema/reference policy changes.
+- approve schema/reference policy changes;
+- execute approved canonical farmer merges;
+- oversee protected RSBSA/name corrections;
+- recover incorrect farmer linkages;
+- ensure merged records remain traceable rather than deleted.
 
 ### Reference update flow
 
@@ -337,6 +354,68 @@ continue profiling
   ↓
 submission can later support registration follow-up
 ```
+
+### Returning farmer
+
+For an authenticated Encoder:
+
+```text
+search farmer
+   ↓
+strong match + secondary confirmation
+   ↓
+open canonical farmer
+   ↓
+UPDATE_PROFILE / ADD_FARM / new annual production submission
+   ↓
+validation as required
+```
+
+Do not create a second farmer master record simply because the farmer returns in a later year.
+
+For public/self-service use, do not expose an existing profile without approved authentication. The farmer may submit an update request and the Validator links it to the canonical farmer.
+
+### Possible duplicate or typo
+
+```text
+new/update submission
+      ↓
+server-side identity match
+      ↓
+possible/fuzzy candidate
+      ↓
+no candidate list shown to farmer
+      ↓
+Identity Review queue
+      ↓
+Validator: LINK_TO_EXISTING / CREATE_NEW / CONFIRMED_DIFFERENT
+      ↓
+Admin executes merge/protected correction if needed
+      ↓
+audit trail
+```
+
+An exact RSBSA value by itself is not treated as unquestionable proof because a typo could collide with another farmer's valid RSBSA.
+
+### Merge of confirmed duplicate farmers
+
+```text
+Validator/Admin confirms same real farmer
+      ↓
+choose canonical farmer_id
+      ↓
+Admin executes locked merge
+      ↓
+re-parent approved child records
+      ↓
+duplicate master → MERGED
+      ↓
+merged_into_farmer_id → canonical farmer
+      ↓
+audit action and reason
+```
+
+Never physically delete the duplicate master as normal deduplication behavior.
 
 ### Reference list update
 
