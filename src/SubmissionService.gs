@@ -45,6 +45,8 @@ function submitEncoderProfile(payload) {
     const farmer = findById_('Farmers', 'farmer_id', cleanPayload.farmer_id);
     if (!farmer) throw new Error('Farmer not found.');
     assertStaffGeographicScope_(staff, farmer.residence_province_code, farmer.residence_lgu_code);
+  } else {
+    assertSubmissionScopeForStaff_(staff, null, cleanPayload);
   }
 
   return createPendingSubmission_(cleanPayload, {
@@ -64,9 +66,16 @@ function createPendingSubmission_(payload, context) {
     : { tier: 'NONE', reasons: [], candidateFarmerIds: [] };
 
   const change = classifySubmission_(type, farmerId, payload);
-  const identityFlags = identitySignals.tier !== 'NONE'
-    ? ['Possible existing farmer/identity match requires Validator review']
+  const protectedIdentityReasons = type !== 'NEW_PROFILE'
+    ? detectProtectedIdentityChanges_(farmerId, payload.farmer)
     : [];
+  const identityFlags = [];
+  if (identitySignals.tier !== 'NONE') {
+    identityFlags.push('Possible existing farmer/identity match requires Validator review');
+  }
+  if (protectedIdentityReasons.length) {
+    identityFlags.push('Protected farmer identity change requires Validator review');
+  }
   const flags = Array.from(new Set((change.flags || []).concat(identityFlags)));
 
   return withScriptLock_(function() {
@@ -101,6 +110,12 @@ function createPendingSubmission_(payload, context) {
       payload.farmer,
       identitySignals
     );
+    const protectedIdentityReview = createProtectedIdentityReviewForSubmissionUnlocked_(
+      submissionId,
+      farmerId,
+      protectedIdentityReasons
+    );
+    if (protectedIdentityReview) identityReviews.push(protectedIdentityReview);
 
     if (context.invitation_id) {
       markInvitationSubmittedUnlocked_(context.invitation_id);
