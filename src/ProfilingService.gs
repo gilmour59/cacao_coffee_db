@@ -46,18 +46,30 @@ function materializePlantingMasterRowsUnlocked_(farmId, crop, submissionId) {
 
   plantings.forEach(function(item) {
     requireFields_(item, ['variety_code','year_planted']);
-    appendObjectRowUnlocked_('Plantings', {
-      planting_id: generateRecordIdUnlocked_('PLT'),
-      farm_id: farmId,
-      submission_id: submissionId,
-      commodity_code: commodity,
-      variety_code: String(item.variety_code || '').toUpperCase(),
-      year_planted: requirePositiveYear_(item.year_planted, 'year_planted'),
-      remarks: cleanText_(item.remarks),
-      record_status: 'ACTIVE',
-      created_at: new Date(),
-      updated_at: new Date()
+    const varietyCode = String(item.variety_code || '').toUpperCase();
+    const yearPlanted = requirePositiveYear_(item.year_planted, 'year_planted');
+
+    const exists = findRowsByField_('Plantings', 'farm_id', farmId).some(function(row) {
+      return String(row.commodity_code || '').toUpperCase() === commodity &&
+        String(row.variety_code || '').toUpperCase() === varietyCode &&
+        Number(row.year_planted || 0) === yearPlanted &&
+        String(row.record_status || 'ACTIVE').toUpperCase() !== 'INACTIVE';
     });
+
+    if (!exists) {
+      appendObjectRowUnlocked_('Plantings', {
+        planting_id: generateRecordIdUnlocked_('PLT'),
+        farm_id: farmId,
+        submission_id: submissionId,
+        commodity_code: commodity,
+        variety_code: varietyCode,
+        year_planted: yearPlanted,
+        remarks: cleanText_(item.remarks),
+        record_status: 'ACTIVE',
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
   });
 }
 
