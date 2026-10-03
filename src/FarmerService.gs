@@ -65,3 +65,51 @@ function getFarmerForStaff(farmerId) {
   delete farmer._rowNumber;
   return farmer;
 }
+
+
+function patchFarmerMasterUnlocked_(farmerId, payload) {
+  if (!payload) return findById_('Farmers', 'farmer_id', farmerId);
+
+  const current = findById_('Farmers', 'farmer_id', farmerId);
+  if (!current) throw new Error('Farmer not found.');
+
+  const patch = {
+    sex: payload.sex ? String(payload.sex).toUpperCase() : current.sex,
+    marital_status_code: payload.marital_status_code
+      ? String(payload.marital_status_code).toUpperCase()
+      : current.marital_status_code,
+    contact_no: payload.contact_no !== undefined ? cleanText_(payload.contact_no) : current.contact_no,
+    alternate_contact_no: payload.alternate_contact_no !== undefined
+      ? cleanText_(payload.alternate_contact_no)
+      : current.alternate_contact_no,
+    email: payload.email !== undefined ? normalizeEmail_(payload.email) : current.email,
+    association_name: payload.association_name !== undefined
+      ? cleanText_(payload.association_name)
+      : current.association_name,
+    residence_province_code: payload.residence_province_code !== undefined
+      ? cleanText_(payload.residence_province_code)
+      : current.residence_province_code,
+    residence_lgu_code: payload.residence_lgu_code !== undefined
+      ? cleanText_(payload.residence_lgu_code)
+      : current.residence_lgu_code,
+    residence_barangay_code: payload.residence_barangay_code !== undefined
+      ? cleanText_(payload.residence_barangay_code)
+      : current.residence_barangay_code,
+    residence_sitio_purok_zone: payload.residence_sitio_purok_zone !== undefined
+      ? cleanText_(payload.residence_sitio_purok_zone)
+      : current.residence_sitio_purok_zone,
+    residence_street_road: payload.residence_street_road !== undefined
+      ? cleanText_(payload.residence_street_road)
+      : current.residence_street_road,
+    residence_house_lot_block: payload.residence_house_lot_block !== undefined
+      ? cleanText_(payload.residence_house_lot_block)
+      : current.residence_house_lot_block,
+    residence_landmark_detail: payload.residence_landmark_detail !== undefined
+      ? cleanText_(payload.residence_landmark_detail)
+      : current.residence_landmark_detail,
+    updated_at: new Date(),
+    updated_by: getActorEmail_()
+  };
+
+  return patchObjectRowByFieldUnlocked_('Farmers', 'farmer_id', farmerId, patch);
+}
