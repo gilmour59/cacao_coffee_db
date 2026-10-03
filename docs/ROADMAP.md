@@ -11,6 +11,7 @@ The project follows a TEST → UAT → HVCP Production workflow.
 - [x] Define TEST and HVCP production ownership strategy.
 - [x] Define PSGC Province → Municipality/City → Barangay references.
 - [x] Include approximate farm point capture.
+- [x] Keep parcel-boundary digitizing/geotagging out of V1; coordinate parcel-boundary data with RSBSA.
 - [x] Include RSBSA status and client-side OCR in V1 scope.
 - [x] Define permanent Farmer Master + time-series profiling model.
 - [x] Finalize V1 farmer access model:
@@ -20,9 +21,9 @@ The project follows a TEST → UAT → HVCP Production workflow.
   - yearly profiling with additional update when there is an expansion;
   - Encoder-assisted fallback.
 - [x] Define backend change classifications: NO_CHANGE, MODIFICATION, NEW_ENTRY, EXPANSION, ANOMALY.
-- [ ] Confirm remaining operational questions with HVCP through the updated questionnaire.
+- [x] Confirm core operational questions with HVCP through the questionnaire and follow-up clarifications.
 - [ ] Lock final V1 Google Sheets schema.
-- [ ] Confirm Coffee/Cacao varieties, topography, interventions, facilities, units/product forms.
+- [x] Confirm Coffee/Cacao varieties, topography, interventions, facility-detail approach, water sources, and kg production basis.
 - [ ] Obtain a privacy-safe RSBSA ID sample for OCR tuning.
 
 ## Phase 1 — Core intake + secure-link infrastructure — Oct 1–5
@@ -49,10 +50,10 @@ Milestone: **New farmer public intake and existing farmer personalized link can 
 - [ ] Support expansion/update profiling events.
 - [ ] Commodity and variety selection.
 - [ ] Year planted.
-- [ ] Newly planted, non-bearing, and bearing tree counts.
+- [ ] Newly planted, non-bearing, bearing, and mortality counts per commodity per farm.
 - [ ] Area planted.
-- [ ] Production records by reference period/year.
-- [ ] Existing post-harvest facilities/equipment history/snapshot behavior.
+- [ ] Per-harvest production records in kg, including selling price per kg.
+- [ ] Farmer-level post-harvest facility/equipment details with utilization.
 - [ ] Assistance/interventions received.
 - [ ] Intervention needs.
 - [ ] Source of water.
