@@ -58,6 +58,26 @@
 - [ ] Verify TEST push/pull workflow.
 - [ ] Create PROD clasp mapping after HVCP production project exists.
 
+## B1. V1 domain-flow restructure
+
+- [x] Create non-destructive schema bootstrap for V1 sheets and core reference data.
+- [x] Stage respondent/Encoder input in Submissions before canonical writes.
+- [x] Disable direct public canonical Farmer/Farm creation.
+- [x] Add secure Profiling_Invitations with hashed bearer tokens.
+- [x] Add server-side staff roles and geographic-scope checks.
+- [x] Add identity/duplicate review service without exposing candidate PII publicly.
+- [x] Add protected identity-correction review path.
+- [x] Add Validator pending-list, review, Approve, and Return workflow.
+- [x] Materialize canonical Farmer/Farm/Profile rows only after approval.
+- [x] Add Profiling_Rounds and commodity-per-farm Planting_Observations.
+- [x] Add per-harvest kg production + price/kg materialization.
+- [x] Add farmer-level facilities, interventions received, and intervention needs.
+- [x] Add change/expansion/anomaly comparison service.
+- [x] Add append-only audit events for critical workflow actions.
+- [ ] Wire the browser UI to the new staged-submission APIs.
+- [ ] Build Validator UI for pending review and identity-resolution actions.
+- [ ] Run Apps Script TEST deployment smoke tests against the new schema.
+
 ## C. TEST Google Sheet / data model
 
 - [ ] Create TEST spreadsheet.
