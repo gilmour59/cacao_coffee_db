@@ -54,12 +54,19 @@ One row per farmer.
 | middle_name | text | no | |
 | last_name | text | yes | |
 | suffix | text | no | Jr., Sr., III, etc. |
-| sex | text/ref | yes | Final values to be confirmed with HVCP |
+| sex | enum | yes | MALE, FEMALE |
+| marital_status_code | text | yes | FK → Ref_Marital_Status |
 | contact_no | text | yes | Store as text |
+| alternate_contact_no | text | no | Store as text |
+| email | text | no | |
+| association_name | text | no | Cooperative or registered association membership, when applicable |
 | residence_province_code | text | yes | PSGC FK → Ref_Provinces |
 | residence_lgu_code | text | yes | PSGC FK → Ref_LGUs |
 | residence_barangay_code | text | yes | PSGC FK → Ref_Barangays |
-| residence_address_detail | text | yes | Local address detail after Barangay; exact components pending HVCP confirmation |
+| residence_sitio_purok_zone | text | no | |
+| residence_street_road | text | no | |
+| residence_house_lot_block | text | no | |
+| residence_landmark_detail | text | no | Additional local address detail |
 | created_from_submission_id | text | no | Initial intake submission |
 | merged_into_farmer_id | text | no | Canonical farmer when this record has been merged |
 | record_status | enum | yes | PENDING, ACTIVE, INACTIVE, MERGED |
@@ -92,6 +99,9 @@ One farmer may have multiple farms.
 | farm_id | text | yes | Stable internal ID |
 | farmer_id | text | yes | FK → Farmers |
 | submission_id | text | no | Submission that created this farm |
+| farm_name_local_id | text | no | Farm name or local identifier |
+| tenure_code | text | yes | FK → Ref_Tenure |
+| total_farm_area_ha | decimal | yes | Total farm area, separate from commodity planted area |
 | farm_address | text | yes | Sitio/Purok/local description |
 | province_code | text | yes | PSGC FK → Ref_Provinces |
 | lgu_code | text | yes | PSGC FK → Ref_LGUs |
@@ -108,7 +118,9 @@ One farmer may have multiple farms.
 | updated_at | timestamp | yes | |
 | updated_by | text | no | |
 
-The latitude/longitude point is for approximate spatial orientation only and is not a parcel boundary.
+The latitude/longitude point is for approximate spatial orientation only.
+
+Parcel-boundary drawing/GPS-walking is **not a V1 feature**. Parcel/geospatial boundary data will be coordinated with RSBSA as an external data source and may be linked later through RSBSA-provided identifiers/data.
 
 ---
 
@@ -127,7 +139,7 @@ Source of water is a required farm profiling input. It is modeled as a repeatabl
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
 
-HVCP must confirm the official source-of-water categories and whether a farm may report more than one source.
+A farm may report multiple water sources. V1 controlled values are Shallow Well, Spring, and River.
 
 ---
 
@@ -143,63 +155,100 @@ A farm may contain multiple coffee/cacao plantings or varieties.
 | commodity_code | text | yes | COFFEE or CACAO in V1 |
 | variety_code | text | yes | FK → Ref_Varieties |
 | year_planted | integer/year | yes | |
-| trees_newly_planted | integer | yes | Less than 1 year |
-| trees_non_bearing | integer | yes | |
-| trees_bearing | integer | yes | |
-| area_planted_ha | decimal | yes | Hectares |
 | remarks | text | no | |
 | record_status | enum | yes | ACTIVE, INACTIVE |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
 
-`total_trees` is derived:
+Tree counts are time-varying and are stored in `Planting_Observations` per commodity per farm and profiling round, not on the stable Plantings master row.
 
-```text
-trees_newly_planted + trees_non_bearing + trees_bearing
-```
+---
 
-Do not require a separate stored total unless reporting performance later justifies it.
+## Profiling_Rounds
+
+One row per farmer/farm profiling event.
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| profiling_round_id | text | yes | Stable internal ID |
+| farmer_id | text | yes | FK → Farmers |
+| farm_id | text | yes | FK → Farms |
+| submission_id | text | yes | FK → Submissions |
+| reference_year | integer/year | yes | |
+| profiling_type | enum | yes | ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION |
+| profiling_date | date | yes | |
+| status | enum | yes | PENDING, APPROVED, RETURNED |
+| created_at | timestamp | yes | |
+| updated_at | timestamp | yes | |
+
+Approved prior rounds are preserved as history.
+
+---
+
+## Planting_Observations
+
+Yearly/current-period Coffee/Cacao tree and planted-area observations.
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| observation_id | text | yes | Stable internal ID |
+| profiling_round_id | text | yes | FK → Profiling_Rounds |
+| farm_id | text | yes | FK → Farms |
+| commodity_code | text | yes | COFFEE or CACAO |
+| trees_newly_planted | integer | yes | Less than 1 year |
+| trees_non_bearing | integer | yes | |
+| trees_bearing | integer | yes | |
+| mortality_count | integer | yes | Current number of dead/mortality trees during the profiling period |
+| area_planted_ha | decimal | yes | Commodity planted area in hectares |
+| updated_at | timestamp | yes | Allows current-period updates before approval |
+
+Tree counts and mortality are recorded separately per commodity per farm.
 
 ---
 
 ## Production
 
-Production is time-varying and must not be stored as a single permanent field on the farmer/farm.
+Production is time-varying and is recorded per commodity per farm and per harvest.
 
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | production_id | text | yes | Stable internal ID |
-| planting_id | text | yes | FK → Plantings |
+| profiling_round_id | text | yes | FK → Profiling_Rounds |
+| farm_id | text | yes | FK → Farms |
+| commodity_code | text | yes | COFFEE or CACAO |
 | submission_id | text | no | |
-| production_year | integer/year | yes | |
-| production_volume | decimal | yes | |
-| production_unit_code | text | yes | FK → Ref_Production_Units |
-| product_form | text/ref | no | e.g. fresh/dried form if HVCP requires |
+| harvest_date | date | no | Use when exact harvest date is available |
+| production_year | integer/year | yes | Reporting/history year |
+| production_volume_kg | decimal | yes | Volume in kilograms |
+| selling_price_per_kg | decimal | no | Price sold per kilogram when available |
 | remarks | text | no | |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
 
-HVCP must confirm the exact production basis/unit expected for Coffee and Cacao.
+No product-form reference list is locked for V1 unless HVCP later supplies one.
 
 ---
 
 ## Facilities
 
-Repeatable existing post-harvest facility/equipment records.
+Repeatable farmer-level existing post-harvest facility/equipment records. V1 does not use controlled facility/equipment categories.
 
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | facility_id | text | yes | Stable internal ID |
-| farm_id | text | yes | FK → Farms |
+| farmer_id | text | yes | FK → Farmers |
 | submission_id | text | no | |
-| facility_type_code | text | yes | FK → Ref_Facility_Types |
-| description | text | no | Details/model/capacity if relevant |
+| description | text | yes | Free-text facility/equipment name/details |
 | quantity | integer | no | |
+| capacity | text | no | Capacity/value + unit as supplied |
+| model_description | text | no | Model or additional description |
+| condition_status | text | no | Condition/status |
+| utilization_status | enum | no | FULLY_UTILIZED, PARTIALLY_UTILIZED, NOT_UTILIZED |
 | remarks | text | no | |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
 
-If a farmer has no facility/equipment, the UI should allow an explicit **None** state rather than forcing a fake record.
+If a farmer has no facility/equipment, the UI should allow an explicit **None** state.
 
 ---
 
@@ -210,7 +259,7 @@ Assistance/interventions already received.
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | intervention_id | text | yes | Stable internal ID |
-| farm_id | text | yes | FK → Farms |
+| farmer_id | text | yes | FK → Farmers |
 | submission_id | text | no | |
 | intervention_type_code | text | yes | FK → Ref_Intervention_Types |
 | provider | text | no | DA/LGU/other |
@@ -229,10 +278,10 @@ Requested/needed interventions.
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | need_id | text | yes | Stable internal ID |
-| farm_id | text | yes | FK → Farms |
+| farmer_id | text | yes | FK → Farmers |
 | submission_id | text | no | |
 | intervention_type_code | text | yes | FK → Ref_Intervention_Types |
-| priority | enum | no | LOW, MEDIUM, HIGH if HVCP wants prioritization |
+| priority | enum | yes | LOW, MEDIUM, HIGH |
 | details | text | no | |
 | remarks | text | no | |
 | created_at | timestamp | yes | |
@@ -249,7 +298,7 @@ Tracks the validation state of one intake/update package.
 | submission_id | text | yes | Stable internal ID |
 | farmer_id | text | no | May be assigned after farmer creation |
 | submission_type | enum | yes | NEW_PROFILE, UPDATE_PROFILE, ADD_FARM, etc. |
-| status | enum | yes | DRAFT, PENDING, APPROVED, RETURNED, REJECTED |
+| status | enum | yes | DRAFT, PENDING, APPROVED, RETURNED |
 | submitted_at | timestamp | no | |
 | submitted_by | text | no | |
 | validated_at | timestamp | no | |
@@ -349,37 +398,69 @@ See `LOCATION_REFERENCE.md`.
 
 `variety_code, commodity_code, variety_name, is_active, sort_order`
 
-HVCP should confirm the official/current list. Include an explicit OTHER option only if the workflow captures the corresponding free-text detail.
+Initial V1 values:
+- Coffee: Robusta, Native
+- Cacao: BR25, UF18, K1, K2
+
+An explicit OTHER value may be supported only where the approved workflow allows Other + specify.
 
 ## Ref_Topographies
 
 `topography_code, topography_name, is_active, sort_order`
 
-Values require HVCP confirmation.
+V1 values:
+- HILLY — Hilly
+- SEMI_ROLLING — Semi-Rolling
 
 ## Ref_Intervention_Types
 
 `intervention_type_code, intervention_type_name, is_active, sort_order`
 
-Do not hard-code intervention choices in JavaScript.
+V1 values used for both interventions received and intervention needs:
+- TRAINING — Training
+- PLANTING_MATERIALS — Planting Materials
+- FERTILIZER — Fertilizer
 
-## Ref_Facility_Types
-
-`facility_type_code, facility_type_name, is_active, sort_order`
-
-Do not hard-code facility/equipment choices in JavaScript.
+Do not hard-code the labels directly in client JavaScript; load them from reference data.
 
 ## Ref_Production_Units
 
 `unit_code, unit_name, unit_symbol, is_active, sort_order`
 
-HVCP must confirm whether production should be recorded in kg, metric tons, or another commodity-specific basis.
+V1 production volume unit is kilograms (kg).
+
+## Ref_Tenure
+
+`tenure_code, tenure_name, is_active, sort_order`
+
+V1 values:
+- OWNED — Owned
+- LEASED_RENTED — Leased/Rented
+- TENANTED — Tenanted
+- USUFRUCT — Usufruct
+- FAMILY_OWNED — Family-owned
+
+No OTHER value is used for V1.
+
+## Ref_Marital_Status
+
+`marital_status_code, marital_status_name, is_active, sort_order`
+
+V1 values:
+- SINGLE — Single
+- MARRIED — Married
+- WIDOWED — Widowed
+- SEPARATED — Separated
+- OTHER — Other
 
 ## Ref_Water_Sources
 
 `water_source_code, water_source_name, is_active, sort_order`
 
-Source-of-water categories must be confirmed by HVCP and should not be hard-coded in the client.
+V1 values:
+- SHALLOW_WELL — Shallow Well
+- SPRING — Spring
+- RIVER — River
 
 ---
 
@@ -390,19 +471,27 @@ The schema includes all current requested collection fields:
 - Name of farmer
 - Gender
 - Contact details
+- Alternate contact number and email
+- Marital status
+- Cooperative/registered-association membership
 - Residence address
 - Farm address
 - Municipality/City
 - Province
 - Barangay (added)
 - Approximate latitude/longitude (added)
+- Farm name/local identifier
+- Farm tenure
+- Total farm area
 - Year planted
 - Variety
 - Newly planted trees / less than 1 year
 - Non-bearing trees
 - Bearing trees
+- Mortality count
 - Total area planted
-- Volume of production
+- Volume of production per harvest in kg
+- Selling price per kg
 - Topography
 - Assistance/intervention received
 - Existing post-harvest facility/equipment
