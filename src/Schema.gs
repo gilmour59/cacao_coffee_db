@@ -97,6 +97,7 @@ function setupDatabaseSchema() {
     ensureSheetSchema_(db, sheetName, SHEET_SCHEMAS[sheetName]);
   });
   seedCoreReferenceData_();
+  seedBootstrapAdmin_();
   return { ok: true, sheets: Object.keys(SHEET_SCHEMAS) };
 }
 
@@ -184,5 +185,27 @@ function seedReferenceRows_(sheetName, rows, keyField) {
 
   rows.forEach(function(row) {
     if (!existingKeys[String(row[keyField])]) appendObjectRow_(sheetName, row);
+  });
+}
+
+
+function seedBootstrapAdmin_() {
+  const email = normalizeEmail_(
+    PropertiesService.getScriptProperties().getProperty('BOOTSTRAP_ADMIN_EMAIL')
+  );
+  if (!email) return;
+
+  const existing = findFirstByField_('Users', 'user_email', email);
+  if (existing) return;
+
+  appendObjectRow_('Users', {
+    user_email: email,
+    full_name: 'Bootstrap Administrator',
+    role: 'ADMIN',
+    province_code: '',
+    lgu_code: '',
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
   });
 }
