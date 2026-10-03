@@ -118,6 +118,7 @@ function approveSubmission(submissionId, remarks) {
       return String(r.resolution || '').toUpperCase() === 'LINK_TO_EXISTING';
     })) {
       patchFarmerMasterUnlocked_(farmerId, payload.farmer || {});
+      applyApprovedIdentityCorrectionsUnlocked_(farmerId, payload.farmer || {}, reviews);
     }
 
     const profilingType = submissionTypeToProfilingType_(submission.submission_type);
