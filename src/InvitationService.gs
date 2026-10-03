@@ -83,8 +83,22 @@ function getInvitationContext(rawToken) {
       return true;
     })
     .map(function(farm) {
-      delete farm._rowNumber;
-      return farm;
+      return {
+        farm_id: farm.farm_id,
+        farm_name_local_id: farm.farm_name_local_id,
+        tenure_code: farm.tenure_code,
+        total_farm_area_ha: farm.total_farm_area_ha,
+        farm_address: farm.farm_address,
+        province_code: farm.province_code,
+        lgu_code: farm.lgu_code,
+        barangay_code: farm.barangay_code,
+        latitude: farm.latitude,
+        longitude: farm.longitude,
+        location_capture_method: farm.location_capture_method,
+        topography_code: farm.topography_code,
+        road_distance_km: farm.road_distance_km,
+        remarks: farm.remarks
+      };
     });
 
   const safeFarmer = {
