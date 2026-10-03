@@ -102,8 +102,6 @@ function approveSubmission(submissionId, remarks) {
       throw new Error('Only pending submissions can be approved.');
     }
 
-    const payload = parseSubmissionPayload_(submission);
-    assertSubmissionScopeForStaff_(staff, submission, payload);
     const reviews = getIdentityReviewsForSubmission_(submissionId);
     const pendingReviews = reviews.filter(function(review) {
       return String(review.review_status || '').toUpperCase() !== 'RESOLVED';
@@ -166,6 +164,8 @@ function returnSubmission(submissionId, remarks) {
   return withScriptLock_(function() {
     const submission = findById_('Submissions', 'submission_id', submissionId);
     if (!submission) throw new Error('Submission not found.');
+    const payload = parseSubmissionPayload_(submission);
+    assertSubmissionScopeForStaff_(staff, submission, payload);
     if (String(submission.status || '').toUpperCase() !== 'PENDING') {
       throw new Error('Only pending submissions can be returned.');
     }
