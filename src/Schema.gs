@@ -49,7 +49,7 @@ const SHEET_SCHEMAS = Object.freeze({
     'details','remarks','created_at','updated_at'
   ],
   Submissions: [
-    'submission_id','farmer_id','submission_type','reference_year','status',
+    'submission_id','farmer_id','invitation_id','submission_type','reference_year','status',
     'payload_json','classification','flag_reasons_json','comparison_json',
     'submitted_at','submitted_by','validated_at','validated_by','validation_remarks',
     'created_at','updated_at'
