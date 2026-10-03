@@ -112,30 +112,29 @@ function findById_(sheetName, idField, idValue) {
 }
 
 function patchObjectRowByField_(sheetName, fieldName, expectedValue, patch) {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+  return withScriptLock_(function() {
+    return patchObjectRowByFieldUnlocked_(sheetName, fieldName, expectedValue, patch);
+  }, 10000);
+}
 
-  try {
-    const sheet = getSheetOrThrow_(sheetName);
-    const headers = getHeaders_(sheet);
-    const target = findFirstByField_(sheetName, fieldName, expectedValue);
-    if (!target) return null;
+function patchObjectRowByFieldUnlocked_(sheetName, fieldName, expectedValue, patch) {
+  const sheet = getSheetOrThrow_(sheetName);
+  const headers = getHeaders_(sheet);
+  const target = findFirstByField_(sheetName, fieldName, expectedValue);
+  if (!target) return null;
 
-    const updated = {};
-    headers.forEach(function(header) {
-      updated[header] = Object.prototype.hasOwnProperty.call(patch, header)
-        ? patch[header]
-        : target[header];
-    });
+  const updated = {};
+  headers.forEach(function(header) {
+    updated[header] = Object.prototype.hasOwnProperty.call(patch, header)
+      ? patch[header]
+      : target[header];
+  });
 
-    sheet.getRange(target._rowNumber, 1, 1, headers.length)
-      .setValues([rowFromObject_(headers, updated)]);
+  sheet.getRange(target._rowNumber, 1, 1, headers.length)
+    .setValues([rowFromObject_(headers, updated)]);
 
-    updated._rowNumber = target._rowNumber;
-    return updated;
-  } finally {
-    lock.releaseLock();
-  }
+  updated._rowNumber = target._rowNumber;
+  return updated;
 }
 
 function withScriptLock_(callback, timeoutMs) {
