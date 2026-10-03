@@ -47,7 +47,11 @@ function resolveFarmForProfileUnlocked_(farmerId, payload, submissionId) {
     if (!existing || String(existing.farmer_id) !== String(farmerId)) {
       throw new Error('Farm does not belong to the selected farmer.');
     }
-    return existing;
+    patchFarmMasterUnlocked_(existing.farm_id, payload);
+    if (Array.isArray(payload.water_sources)) {
+      materializeWaterSourcesUnlocked_(existing.farm_id, payload.water_sources, submissionId);
+    }
+    return findById_('Farms', 'farm_id', existing.farm_id);
   }
   return materializeFarmUnlocked_(farmerId, payload, submissionId);
 }
@@ -66,4 +70,44 @@ function materializeWaterSourcesUnlocked_(farmId, waterSources, submissionId) {
       updated_at: new Date()
     });
   });
+}
+
+
+function patchFarmMasterUnlocked_(farmId, payload) {
+  const current = findById_('Farms', 'farm_id', farmId);
+  if (!current) throw new Error('Farm not found.');
+
+  const patch = {
+    farm_name_local_id: payload.farm_name_local_id !== undefined
+      ? cleanText_(payload.farm_name_local_id)
+      : current.farm_name_local_id,
+    tenure_code: payload.tenure_code
+      ? String(payload.tenure_code).toUpperCase()
+      : current.tenure_code,
+    total_farm_area_ha: payload.total_farm_area_ha !== undefined
+      ? requireNonNegativeNumber_(payload.total_farm_area_ha, 'total_farm_area_ha')
+      : current.total_farm_area_ha,
+    farm_address: payload.farm_address !== undefined ? cleanText_(payload.farm_address) : current.farm_address,
+    province_code: payload.province_code !== undefined ? cleanText_(payload.province_code) : current.province_code,
+    lgu_code: payload.lgu_code !== undefined ? cleanText_(payload.lgu_code) : current.lgu_code,
+    barangay_code: payload.barangay_code !== undefined ? cleanText_(payload.barangay_code) : current.barangay_code,
+    latitude: payload.latitude !== undefined ? Number(payload.latitude) : current.latitude,
+    longitude: payload.longitude !== undefined ? Number(payload.longitude) : current.longitude,
+    location_capture_method: payload.location_capture_method || current.location_capture_method,
+    topography_code: payload.topography_code
+      ? String(payload.topography_code).toUpperCase()
+      : current.topography_code,
+    road_distance_km: payload.road_distance_km !== undefined
+      ? requireNonNegativeNumber_(payload.road_distance_km, 'road_distance_km')
+      : current.road_distance_km,
+    remarks: payload.remarks !== undefined ? cleanText_(payload.remarks) : current.remarks,
+    updated_at: new Date(),
+    updated_by: getActorEmail_()
+  };
+
+  if (payload.latitude !== undefined || payload.longitude !== undefined) {
+    validateCoordinates_(patch.latitude, patch.longitude);
+  }
+
+  return patchObjectRowByFieldUnlocked_('Farms', 'farm_id', farmId, patch);
 }
