@@ -74,13 +74,16 @@
 - [x] Add farmer-level facilities, interventions received, and intervention needs.
 - [x] Add change/expansion/anomaly comparison service.
 - [x] Add append-only audit events for critical workflow actions.
-- [ ] Wire the browser UI to the new staged-submission APIs.
-- [ ] Build Validator UI for pending review and identity-resolution actions.
+- [x] Wire the browser UI to the new staged-submission APIs for the first single-farm vertical slice.
+- [x] Build Validator UI for pending review, identity-resolution, Approve, and Return.
 - [ ] Run Apps Script TEST deployment smoke tests against the new schema.
+- [ ] Extend the UI from the first single-farm vertical slice to add/manage multiple farms in one farmer profiling cycle.
+- [ ] Add public-endpoint rate/abuse protection before production deployment.
+- [ ] Load the required PSGC location reference data into TEST.
 
 ## C. TEST Google Sheet / data model
 
-- [ ] Create TEST spreadsheet.
+- [x] Create TEST spreadsheet and initialize V1 sheet tabs/headers/reference values.
 - [ ] Add Farmers.
 - [ ] Add Farms.
 - [ ] Add Profiling_Rounds.
