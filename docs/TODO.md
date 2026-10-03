@@ -79,30 +79,30 @@
 - [ ] Run Apps Script TEST deployment smoke tests against the new schema.
 - [ ] Extend the UI from the first single-farm vertical slice to add/manage multiple farms in one farmer profiling cycle.
 - [ ] Add public-endpoint rate/abuse protection before production deployment.
-- [ ] Load the required PSGC location reference data into TEST.
+- [x] Load the initial official PSGC pilot references: Iloilo → Pototan → 50 barangays.
 
 ## C. TEST Google Sheet / data model
 
 - [x] Create TEST spreadsheet and initialize V1 sheet tabs/headers/reference values.
-- [ ] Add Farmers.
-- [ ] Add Farms.
-- [ ] Add Profiling_Rounds.
-- [ ] Add Plantings.
-- [ ] Add Planting_Observations or equivalent time-bound planting snapshot structure.
-- [ ] Add Production.
-- [ ] Add Facilities / facility observations as finalized.
-- [ ] Add Interventions.
-- [ ] Add Intervention_Needs.
-- [ ] Add Submissions.
-- [ ] Add Profiling_Invitations.
-- [ ] Add Identity_Reviews.
-- [ ] Add Users.
-- [ ] Add Audit_Log.
-- [ ] Add all reference sheets, including Ref_Water_Sources.
-- [ ] Format IDs/PSGC codes as Plain text.
+- [x] Add Farmers.
+- [x] Add Farms.
+- [x] Add Profiling_Rounds.
+- [x] Add Plantings.
+- [x] Add Planting_Observations.
+- [x] Add Production.
+- [x] Add Facilities.
+- [x] Add Interventions.
+- [x] Add Intervention_Needs.
+- [x] Add Submissions.
+- [x] Add Profiling_Invitations.
+- [x] Add Identity_Reviews.
+- [x] Add Users.
+- [x] Add Audit_Log.
+- [x] Add all V1 reference sheets, including Ref_Water_Sources.
+- [x] Format IDs, PSGC codes, RSBSA/contact numbers, and related keys as Plain text.
 - [ ] Protect system-generated and canonical identity columns.
-- [ ] Load Region VI PSGC reference data.
-- [ ] Load initial Coffee/Cacao reference data.
+- [ ] Expand PSGC reference data beyond the Pototan pilot when needed.
+- [x] Load initial Coffee/Cacao, topography, water-source, tenure, marital-status, intervention, and production-unit references.
 
 ## D. Apps Script core
 
