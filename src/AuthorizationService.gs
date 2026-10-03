@@ -43,3 +43,30 @@ function assertStaffGeographicScope_(user, provinceCode, lguCode) {
 function normalizeEmail_(value) {
   return String(value || '').trim().toLowerCase();
 }
+
+
+function assertSubmissionScopeForStaff_(user, submissionRow, payload) {
+  if (!user) throw new Error('Authorized staff access is required.');
+
+  if (submissionRow && submissionRow.farmer_id) {
+    const farmer = findById_('Farmers', 'farmer_id', submissionRow.farmer_id);
+    if (farmer) {
+      assertStaffGeographicScope_(user, farmer.residence_province_code, farmer.residence_lgu_code);
+      return;
+    }
+  }
+
+  if (payload && payload.farmer) {
+    assertStaffGeographicScope_(
+      user,
+      payload.farmer.residence_province_code,
+      payload.farmer.residence_lgu_code
+    );
+    return;
+  }
+
+  const firstFarm = payload && payload.farms && payload.farms[0];
+  if (firstFarm) {
+    assertStaffGeographicScope_(user, firstFarm.province_code, firstFarm.lgu_code);
+  }
+}
