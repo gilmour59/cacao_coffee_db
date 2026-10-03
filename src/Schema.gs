@@ -92,6 +92,7 @@ const SHEET_SCHEMAS = Object.freeze({
 });
 
 function setupDatabaseSchema() {
+  requireBootstrapAdmin_();
   const db = getDatabase_();
   Object.keys(SHEET_SCHEMAS).forEach(function(sheetName) {
     ensureSheetSchema_(db, sheetName, SHEET_SCHEMAS[sheetName]);
@@ -208,4 +209,19 @@ function seedBootstrapAdmin_() {
     created_at: new Date(),
     updated_at: new Date()
   });
+}
+
+
+function requireBootstrapAdmin_() {
+  const configured = normalizeEmail_(
+    PropertiesService.getScriptProperties().getProperty('BOOTSTRAP_ADMIN_EMAIL')
+  );
+  if (!configured) {
+    throw new Error('BOOTSTRAP_ADMIN_EMAIL must be configured before database setup.');
+  }
+
+  const actor = normalizeEmail_(getActorEmail_());
+  if (!actor || actor !== configured) {
+    throw new Error('Only the configured bootstrap administrator may initialize the database.');
+  }
 }
