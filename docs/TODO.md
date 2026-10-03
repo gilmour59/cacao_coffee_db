@@ -7,7 +7,6 @@
 - [x] Do not retain RSBSA ID images.
 - [x] Use PSGC Province → Municipality/City → Barangay references.
 - [x] Add approximate farm latitude/longitude.
-- [x] Parcel boundary digitizing/geotagging is out of V1 scope; coordinate parcel data with RSBSA as an external source.
 - [x] Define permanent Farmer Master + Farm Master + time-series profiling direction.
 - [x] Finalize V1 farmer access model: public intake link for new farmers; personalized secure links for existing farmers.
 - [x] Define one secure link = one farmer + one profiling cycle/purpose.
@@ -21,7 +20,6 @@
 - [x] Link delivery may use SMS/text, Messenger, email, or assisted staff delivery.
 - [x] Links remain valid until end of profiling period unless revoked; returned submissions may reuse the same link or receive a new correction link.
 - [x] Expansion means additional area and/or newly planted trees.
-- [ ] Confirm exact RSBSA number format from a sample ID.
 - [ ] Private-sector data access/export policy remains TBD; do not implement direct external access until formal policy exists.
 - [x] Coffee varieties: Robusta, Native.
 - [x] Cacao varieties: BR25, UF18, K1, K2.
@@ -248,3 +246,11 @@
 - [ ] Admin guide for generating/revoking links and reviewing anomalies.
 - [ ] Encoder quick user guide based on final UI.
 - [ ] Record final production deployment/version.
+
+
+## M. Backlog / Post-V1
+
+- [ ] Coordinate with RSBSA on parcel/geospatial boundary data availability, identifiers, format, and update process.
+- [ ] Define future parcel-data integration once RSBSA coordination is completed.
+- [ ] Confirm exact RSBSA number format from a privacy-safe sample ID for OCR tuning when coordination resumes.
+- [ ] Revisit RSBSA parcel visualization/reference in the application after V1; do not build parcel digitizing/geotagging in the current MVP.
