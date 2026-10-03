@@ -1,7 +1,16 @@
 function listPendingSubmissions() {
-  requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR]);
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR]);
   return getRowsAsObjects_('Submissions')
-    .filter(function(row) { return String(row.status || '').toUpperCase() === 'PENDING'; })
+    .filter(function(row) {
+      if (String(row.status || '').toUpperCase() !== 'PENDING') return false;
+      const payload = parseSubmissionPayload_(row);
+      try {
+        assertSubmissionScopeForStaff_(staff, row, payload);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    })
     .map(function(row) {
       const payload = parseSubmissionPayload_(row);
       let subjectName = '';
@@ -31,9 +40,11 @@ function listPendingSubmissions() {
 }
 
 function getSubmissionForReview(submissionId) {
-  requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR]);
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR]);
   const row = findById_('Submissions', 'submission_id', submissionId);
   if (!row) throw new Error('Submission not found.');
+  const payload = parseSubmissionPayload_(row);
+  assertSubmissionScopeForStaff_(staff, row, payload);
 
   const identityReviews = getIdentityReviewsForSubmission_(submissionId).map(function(review) {
     const candidate = review.candidate_farmer_id
@@ -74,7 +85,7 @@ function getSubmissionForReview(submissionId) {
       submitted_at: row.submitted_at,
       submitted_by: row.submitted_by
     },
-    payload: parseSubmissionPayload_(row),
+    payload: payload,
     identity_reviews: identityReviews
   };
 }
@@ -85,11 +96,14 @@ function approveSubmission(submissionId, remarks) {
   return withScriptLock_(function() {
     const submission = findById_('Submissions', 'submission_id', submissionId);
     if (!submission) throw new Error('Submission not found.');
+    const payload = parseSubmissionPayload_(submission);
+    assertSubmissionScopeForStaff_(staff, submission, payload);
     if (String(submission.status || '').toUpperCase() !== 'PENDING') {
       throw new Error('Only pending submissions can be approved.');
     }
 
     const payload = parseSubmissionPayload_(submission);
+    assertSubmissionScopeForStaff_(staff, submission, payload);
     const reviews = getIdentityReviewsForSubmission_(submissionId);
     const pendingReviews = reviews.filter(function(review) {
       return String(review.review_status || '').toUpperCase() !== 'RESOLVED';
