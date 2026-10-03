@@ -24,7 +24,10 @@ Google Sheets is used as the operational data store, but the structure is intent
 |---|---|
 | Farmer | FMR-2026-000001 |
 | Farm | FRM-2026-000001 |
+| Farm water source | FWS-2026-000001 |
 | Planting | PLT-2026-000001 |
+| Profiling round | PFR-2026-000001 |
+| Planting observation | OBS-2026-000001 |
 | Production | PRD-2026-000001 |
 | Facility | FAC-2026-000001 |
 | Intervention received | INT-2026-000001 |
@@ -32,6 +35,7 @@ Google Sheets is used as the operational data store, but the structure is intent
 | Submission | SUB-2026-000001 |
 | Audit log | AUD-2026-000001 |
 | Identity review | IDR-2026-000001 |
+| Profiling invitation | INV-2026-000001 |
 
 RSBSA numbers are external identifiers and must **not** replace `farmer_id`.
 
@@ -291,23 +295,54 @@ Requested/needed interventions.
 
 ## Submissions
 
-Tracks the validation state of one intake/update package.
+Stages one intake/update package before canonical records are changed.
 
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | submission_id | text | yes | Stable internal ID |
-| farmer_id | text | no | May be assigned after farmer creation |
-| submission_type | enum | yes | NEW_PROFILE, UPDATE_PROFILE, ADD_FARM, etc. |
-| status | enum | yes | DRAFT, PENDING, APPROVED, RETURNED |
-| submitted_at | timestamp | no | |
-| submitted_by | text | no | |
+| farmer_id | text | no | Existing/canonical farmer when known; assigned on approval for genuinely new farmers |
+| invitation_id | text | no | FK → Profiling_Invitations for secure-link submissions |
+| submission_type | enum | yes | NEW_PROFILE, ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, NEW_FARM |
+| reference_year | integer/year | yes | |
+| status | enum | yes | PENDING, APPROVED, RETURNED |
+| payload_json | text | yes | Sanitized staged respondent/Encoder payload; no ID image |
+| classification | enum | yes | NO_CHANGE, MODIFICATION, NEW_ENTRY, EXPANSION, ANOMALY |
+| flag_reasons_json | text | no | Human-readable review flags |
+| comparison_json | text | no | Prior-vs-current aggregate comparison used by Validator |
+| submitted_at | timestamp | yes | |
+| submitted_by | text | no | Public/secure-link/staff actor context |
 | validated_at | timestamp | no | |
 | validated_by | text | no | |
 | validation_remarks | text | no | |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
 
-This sheet lets validation happen at submission-package level rather than trying to approve individual cells.
+Canonical Farmer/Farm/Profile records are materialized only after Validator approval.
+
+---
+
+## Profiling_Invitations
+
+Secure bearer links for existing-farmer profiling. One invitation is tied to one farmer, reference period, and purpose.
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| invitation_id | text | yes | Stable internal ID |
+| farmer_id | text | yes | FK → Farmers |
+| farm_id | text | no | Optional targeted farm |
+| reference_year | integer/year | yes | |
+| purpose | enum | yes | ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, NEW_FARM |
+| token_hash | text | yes | SHA-256 hash of raw bearer token |
+| status | enum | yes | ACTIVE, SUBMITTED, RETURNED, EXPIRED, REVOKED |
+| expires_at | timestamp | no | Optional explicit expiry |
+| first_opened_at | timestamp | no | |
+| last_opened_at | timestamp | no | |
+| submitted_at | timestamp | no | |
+| created_by | text | yes | Staff user |
+| created_at | timestamp | yes | |
+| revoked_at | timestamp | no | |
+
+The raw token is returned only when the invitation is generated; the sheet stores only the hash.
 
 ---
 

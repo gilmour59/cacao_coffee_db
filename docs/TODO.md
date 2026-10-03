@@ -58,28 +58,51 @@
 - [ ] Verify TEST push/pull workflow.
 - [ ] Create PROD clasp mapping after HVCP production project exists.
 
+## B1. V1 domain-flow restructure
+
+- [x] Create non-destructive schema bootstrap for V1 sheets and core reference data.
+- [x] Stage respondent/Encoder input in Submissions before canonical writes.
+- [x] Disable direct public canonical Farmer/Farm creation.
+- [x] Add secure Profiling_Invitations with hashed bearer tokens.
+- [x] Add server-side staff roles and geographic-scope checks.
+- [x] Add identity/duplicate review service without exposing candidate PII publicly.
+- [x] Add protected identity-correction review path.
+- [x] Add Validator pending-list, review, Approve, and Return workflow.
+- [x] Materialize canonical Farmer/Farm/Profile rows only after approval.
+- [x] Add Profiling_Rounds and commodity-per-farm Planting_Observations.
+- [x] Add per-harvest kg production + price/kg materialization.
+- [x] Add farmer-level facilities, interventions received, and intervention needs.
+- [x] Add change/expansion/anomaly comparison service.
+- [x] Add append-only audit events for critical workflow actions.
+- [x] Wire the browser UI to the new staged-submission APIs for the first single-farm vertical slice.
+- [x] Build Validator UI for pending review, identity-resolution, Approve, and Return.
+- [ ] Run Apps Script TEST deployment smoke tests against the new schema.
+- [ ] Extend the UI from the first single-farm vertical slice to add/manage multiple farms in one farmer profiling cycle.
+- [ ] Add public-endpoint rate/abuse protection before production deployment.
+- [x] Load the initial official PSGC pilot references: Iloilo → Pototan → 50 barangays.
+
 ## C. TEST Google Sheet / data model
 
-- [ ] Create TEST spreadsheet.
-- [ ] Add Farmers.
-- [ ] Add Farms.
-- [ ] Add Profiling_Rounds.
-- [ ] Add Plantings.
-- [ ] Add Planting_Observations or equivalent time-bound planting snapshot structure.
-- [ ] Add Production.
-- [ ] Add Facilities / facility observations as finalized.
-- [ ] Add Interventions.
-- [ ] Add Intervention_Needs.
-- [ ] Add Submissions.
-- [ ] Add Profiling_Invitations.
-- [ ] Add Identity_Reviews.
-- [ ] Add Users.
-- [ ] Add Audit_Log.
-- [ ] Add all reference sheets, including Ref_Water_Sources.
-- [ ] Format IDs/PSGC codes as Plain text.
+- [x] Create TEST spreadsheet and initialize V1 sheet tabs/headers/reference values.
+- [x] Add Farmers.
+- [x] Add Farms.
+- [x] Add Profiling_Rounds.
+- [x] Add Plantings.
+- [x] Add Planting_Observations.
+- [x] Add Production.
+- [x] Add Facilities.
+- [x] Add Interventions.
+- [x] Add Intervention_Needs.
+- [x] Add Submissions.
+- [x] Add Profiling_Invitations.
+- [x] Add Identity_Reviews.
+- [x] Add Users.
+- [x] Add Audit_Log.
+- [x] Add all V1 reference sheets, including Ref_Water_Sources.
+- [x] Format IDs, PSGC codes, RSBSA/contact numbers, and related keys as Plain text.
 - [ ] Protect system-generated and canonical identity columns.
-- [ ] Load Region VI PSGC reference data.
-- [ ] Load initial Coffee/Cacao reference data.
+- [ ] Expand PSGC reference data beyond the Pototan pilot when needed.
+- [x] Load initial Coffee/Cacao, topography, water-source, tenure, marital-status, intervention, and production-unit references.
 
 ## D. Apps Script core
 
