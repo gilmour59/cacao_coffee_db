@@ -7,6 +7,7 @@
 - [x] Do not retain RSBSA ID images.
 - [x] Use PSGC Province → Municipality/City → Barangay references.
 - [x] Add approximate farm latitude/longitude.
+- [x] Parcel boundary digitizing/geotagging is out of V1 scope; coordinate parcel data with RSBSA as an external source.
 - [x] Define permanent Farmer Master + Farm Master + time-series profiling direction.
 - [x] Finalize V1 farmer access model: public intake link for new farmers; personalized secure links for existing farmers.
 - [x] Define one secure link = one farmer + one profiling cycle/purpose.
@@ -14,33 +15,34 @@
 - [x] Preserve previous approved yearly observations rather than overwriting them.
 - [x] Define backend change classifications: NO_CHANGE, MODIFICATION, NEW_ENTRY, EXPANSION, ANOMALY.
 - [x] Define secure deduplication and identity-review rules.
-- [ ] Review final operational workflow with HVCP.
-- [ ] Confirm whether all submissions or only flagged/exception submissions require Validator review.
-- [ ] Confirm who may generate/resend/revoke personalized profiling links.
-- [ ] Confirm preferred link delivery channels.
-- [ ] Confirm secure-link validity period and returned-correction behavior.
-- [ ] Confirm HVCP's operational definition of expansion.
+- [x] Review final operational workflow with HVCP.
+- [x] All new/annual/expansion submissions require Validator review.
+- [x] Data Administrator, Validator, and authorized Encoder may generate/resend/revoke personalized profiling links.
+- [x] Link delivery may use SMS/text, Messenger, email, or assisted staff delivery.
+- [x] Links remain valid until end of profiling period unless revoked; returned submissions may reuse the same link or receive a new correction link.
+- [x] Expansion means additional area and/or newly planted trees.
 - [ ] Confirm exact RSBSA number format from a sample ID.
-- [ ] Confirm official Coffee variety list.
-- [ ] Confirm official Cacao variety list.
-- [ ] Confirm topography choices.
-- [ ] Confirm intervention choices.
-- [ ] Confirm facility/equipment choices.
-- [ ] Confirm production units/product forms.
+- [ ] Private-sector data access/export policy remains TBD; do not implement direct external access until formal policy exists.
+- [x] Coffee varieties: Robusta, Native.
+- [x] Cacao varieties: BR25, UF18, K1, K2.
+- [x] Topography: Hilly, Semi-Rolling.
+- [x] Intervention types: Training, Planting Materials, Fertilizer.
+- [x] No controlled facility/equipment categories in V1; capture free-text details plus utilization.
+- [x] Production volume is per harvest in kilograms; capture selling price per kg. No product-form list is locked for V1.
 - [ ] Confirm which fields are mandatory vs optional.
 - [x] Source of water is a required farm input.
-- [ ] Confirm whether one farm may have multiple water sources.
-- [ ] Confirm official source-of-water categories for reporting/reference data.
+- [x] One farm may have multiple water sources.
+- [x] Water sources: Shallow Well, Spring, River.
 - [x] Use structured residence address: Province → Municipality/City → Barangay + local address detail.
-- [ ] Confirm which lower-level residence address details HVCP wants (Sitio/Purok/Zone, Street/Road, House/Lot/Block, landmark, etc.).
-- [ ] Confirm optional/additional farmer and farm attributes for V1.
-- [ ] Confirm whether total farm area is stored separately from Coffee/Cacao planted area.
-- [ ] Confirm yearly tree-count granularity (per variety/planting vs commodity vs farm).
-- [ ] Confirm whether production units/product forms may differ by commodity.
+- [x] Residence local details: Sitio/Purok/Zone, Street/Road, House/Lot/Block, Landmark/additional detail.
+- [x] Add email, alternate contact, cooperative/registered-association membership, tenure, total farm area, and farm name/local ID.
+- [x] Store total farm area separately from Coffee/Cacao planted area.
+- [x] Tree counts are per commodity per farm.
+- [x] Use kg as the V1 production volume unit; no separate product-form list is locked.
 - [ ] Confirm policy for `Other + specify` on controlled reference lists.
-- [ ] Confirm whether approved historical yearly records are locked except through audited correction.
-- [ ] Confirm anomaly-threshold ownership/rules.
-- [ ] Confirm which profiling fields may remain blank when information is unavailable.
+- [x] Preserve approved historical yearly records except through audited correction.
+- [x] Development team may propose initial anomaly thresholds for HVCP review/UAT.
+- [x] Unavailable profiling values may use None/N/A where appropriate.
 
 ## B. Repository and local development
 
@@ -137,12 +139,13 @@
 - [ ] Preserve previous approved yearly values.
 - [ ] Separate master-data correction from new time-series observation.
 - [ ] Commodity/variety/year planted.
-- [ ] Newly planted/non-bearing/bearing tree counts.
+- [ ] Newly planted/non-bearing/bearing tree counts per commodity per farm.
+- [ ] Mortality count per commodity per farm, updateable during the active profiling period.
 - [ ] Area planted.
-- [ ] Production year/volume/unit/product form.
-- [ ] Facilities/equipment snapshot/history as finalized.
-- [ ] Interventions received.
-- [ ] Intervention needs.
+- [ ] Per-harvest production volume in kg and selling price per kg.
+- [ ] Farmer-level facilities/equipment: free-text item, quantity, capacity, model/description, condition/status, utilization.
+- [ ] Farmer-level interventions received: Training, Planting Materials, Fertilizer + provider/source + year.
+- [ ] Farmer-level intervention needs using the same three categories + Low/Medium/High priority.
 - [ ] New farm/expansion structural workflow.
 - [ ] Review screen and submit.
 
@@ -182,7 +185,7 @@
 - [ ] Save latitude/longitude.
 - [ ] Topography.
 - [ ] Road distance.
-- [ ] Source of water.
+- [ ] Source of water (multiple allowed): Shallow Well, Spring, River.
 
 ## J. Dashboard/reporting
 
