@@ -113,3 +113,49 @@ function resolveIdentityReview(reviewId, resolution, notes) {
 function getIdentityReviewsForSubmission_(submissionId) {
   return findRowsByField_('Identity_Reviews', 'submission_id', submissionId);
 }
+
+
+function detectProtectedIdentityChanges_(farmerId, farmerPayload) {
+  if (!farmerId || !farmerPayload) return [];
+  const current = findById_('Farmers', 'farmer_id', farmerId);
+  if (!current) return [];
+
+  const reasons = [];
+  if (farmerPayload.rsbsa_no !== undefined &&
+      normalizeRsbsaNo_(farmerPayload.rsbsa_no) !== normalizeRsbsaNo_(current.rsbsa_no)) {
+    reasons.push('RSBSA number change requested');
+  }
+
+  ['first_name','middle_name','last_name','suffix'].forEach(function(field) {
+    if (farmerPayload[field] !== undefined &&
+        normalizeNamePart_(farmerPayload[field]) !== normalizeNamePart_(current[field])) {
+      reasons.push(field + ' change requested');
+    }
+  });
+
+  return reasons;
+}
+
+function createProtectedIdentityReviewForSubmissionUnlocked_(submissionId, farmerId, reasons) {
+  if (!reasons || !reasons.length) return null;
+
+  const now = new Date();
+  const row = {
+    identity_review_id: generateRecordIdUnlocked_('IDR'),
+    submission_id: submissionId,
+    subject_farmer_id: farmerId,
+    candidate_farmer_id: farmerId,
+    match_tier: 'STRONG',
+    match_reasons: reasons.join('; '),
+    review_status: 'PENDING',
+    resolution: '',
+    requested_by: getActorEmail_(),
+    resolved_by: '',
+    resolved_at: '',
+    resolution_notes: '',
+    created_at: now,
+    updated_at: now
+  };
+  appendObjectRowUnlocked_('Identity_Reviews', row);
+  return row;
+}
