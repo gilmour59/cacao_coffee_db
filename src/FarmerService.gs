@@ -113,3 +113,32 @@ function patchFarmerMasterUnlocked_(farmerId, payload) {
 
   return patchObjectRowByFieldUnlocked_('Farmers', 'farmer_id', farmerId, patch);
 }
+
+
+function applyApprovedIdentityCorrectionsUnlocked_(farmerId, payload, identityReviews) {
+  if (!payload) return;
+  const approved = (identityReviews || []).some(function(review) {
+    return String(review.resolution || '').toUpperCase() === 'IDENTITY_CORRECTION_APPROVED';
+  });
+  if (!approved) return;
+
+  const current = findById_('Farmers', 'farmer_id', farmerId);
+  if (!current) throw new Error('Farmer not found.');
+
+  const patch = {
+    rsbsa_registration_status: payload.rsbsa_registration_status || current.rsbsa_registration_status,
+    rsbsa_no: payload.rsbsa_no !== undefined ? normalizeRsbsaNo_(payload.rsbsa_no) : current.rsbsa_no,
+    rsbsa_capture_method: payload.rsbsa_capture_method || current.rsbsa_capture_method,
+    rsbsa_info_confirmed: payload.rsbsa_info_confirmed !== undefined
+      ? parseBoolean_(payload.rsbsa_info_confirmed)
+      : current.rsbsa_info_confirmed,
+    first_name: payload.first_name !== undefined ? cleanText_(payload.first_name) : current.first_name,
+    middle_name: payload.middle_name !== undefined ? cleanText_(payload.middle_name) : current.middle_name,
+    last_name: payload.last_name !== undefined ? cleanText_(payload.last_name) : current.last_name,
+    suffix: payload.suffix !== undefined ? cleanText_(payload.suffix) : current.suffix,
+    updated_at: new Date(),
+    updated_by: getActorEmail_()
+  };
+
+  patchObjectRowByFieldUnlocked_('Farmers', 'farmer_id', farmerId, patch);
+}
