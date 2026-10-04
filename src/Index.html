@@ -3,6 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <?!= include('Styles'); ?>
@@ -11,10 +12,11 @@
   <section class="section app-shell">
     <div class="container">
       <div class="app-header mb-5">
-        <div>
-          <p class="is-size-7 has-text-grey"><?= environment ?></p>
-          <h1 class="title is-4 mb-2"><?= appName ?></h1>
-          <p class="subtitle is-6 mb-0">HVCP Coffee and Cacao farmer profiling, annual updates, and validation.</p>
+        <div class="brand-mark" aria-hidden="true"><span>CC</span></div>
+        <div class="brand-copy">
+          <p class="environment-label"><?= environment ?></p>
+          <h1 class="title is-4 mb-2 app-title"><?= appName ?></h1>
+          <p class="subtitle is-6 mb-0 app-subtitle">HVCP Coffee and Cacao farmer profiling, annual updates, and validation.</p>
         </div>
         <div id="staff-badge" class="is-hidden has-text-right">
           <p class="is-size-7 has-text-grey">Signed-in staff</p>
@@ -39,7 +41,7 @@
         </div>
 
         <section id="intake-view">
-          <div id="intake-context" class="notification is-light mb-5">
+          <div id="intake-context" class="intake-context mb-5">
             <strong id="intake-context-title">New farmer profiling</strong>
             <p id="intake-context-text" class="is-size-7 mt-1">
               Submit the profile for Validator review. Approved records are added to the canonical database.
@@ -49,7 +51,7 @@
           <form id="profiling-form">
             <input id="reference-year" type="hidden">
 
-            <div class="box">
+            <div class="box form-section">
               <h2 class="title is-5">1. Farmer Information</h2>
 
               <div class="field">
@@ -108,7 +110,7 @@
               </div>
             </div>
 
-            <div class="box">
+            <div class="box form-section">
               <h2 class="title is-5">2. Farm Information</h2>
               <input id="existing-farm-id" type="hidden">
               <div class="columns is-multiline">
@@ -141,14 +143,14 @@
               </div>
             </div>
 
-            <div class="box">
+            <div class="box form-section">
               <h2 class="title is-5">3. Coffee / Cacao Profile</h2>
               <p class="help mb-4">Tree counts are recorded separately per commodity per farm.</p>
 
               <div id="commodity-sections"></div>
             </div>
 
-            <div class="box">
+            <div class="box form-section">
               <h2 class="title is-5">4. Facilities and Interventions</h2>
 
               <div class="subsection">
@@ -176,12 +178,12 @@
               </div>
             </div>
 
-            <div class="box">
+            <div class="box form-section">
               <h2 class="title is-5">5. Review and Submit</h2>
               <p class="mb-4">Submission does not immediately change the official farmer database. It will be sent to a Validator first.</p>
-              <div class="buttons">
-                <button id="preview-submission" class="button is-light" type="button">Review Summary</button>
-                <button id="submit-profile" class="button is-primary" type="submit">Submit for Validation</button>
+              <div class="submit-actions">
+                <button id="preview-submission" class="button is-light action-secondary" type="button">Review Summary</button>
+                <button id="submit-profile" class="button is-primary action-primary" type="submit">Submit for Validation</button>
               </div>
               <pre id="review-summary" class="review-summary is-hidden"></pre>
             </div>
@@ -189,7 +191,7 @@
         </section>
 
         <section id="validator-view" class="is-hidden">
-          <div class="box">
+          <div class="box form-section">
             <div class="level is-mobile">
               <div class="level-left">
                 <div>
