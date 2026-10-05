@@ -17,6 +17,7 @@ function evaluateIdentitySignals_(farmerPayload) {
   const first = normalizeNamePart_(farmerPayload.first_name);
   const last = normalizeNamePart_(farmerPayload.last_name);
   const phone = normalizePhone_(farmerPayload.contact_no);
+  const alternatePhone = normalizePhone_(farmerPayload.alternate_contact_no);
   const barangay = cleanText_(farmerPayload.residence_barangay_code);
 
   const farmers = getRowsAsObjects_('Farmers');
@@ -28,6 +29,7 @@ function evaluateIdentitySignals_(farmerPayload) {
     const rowFirst = normalizeNamePart_(row.first_name);
     const rowLast = normalizeNamePart_(row.last_name);
     const rowPhone = normalizePhone_(row.contact_no);
+    const rowAlternatePhone = normalizePhone_(row.alternate_contact_no);
     const rowBarangay = cleanText_(row.residence_barangay_code);
 
     if (rsbsa && rowRsbsa && rsbsa === rowRsbsa) {
@@ -48,10 +50,23 @@ function evaluateIdentitySignals_(farmerPayload) {
       return;
     }
 
-    if (first && last && phone &&
-        first === rowFirst && last === rowLast && phone === rowPhone) {
+    const incomingPhones = [phone, alternatePhone].filter(Boolean);
+    const existingPhones = [rowPhone, rowAlternatePhone].filter(Boolean);
+    const sharedPhone = incomingPhones.some(function(value) {
+      return existingPhones.indexOf(value) !== -1;
+    });
+
+    if (first && last && sharedPhone &&
+        first === rowFirst && last === rowLast) {
       if (result.tier !== 'STRONG') result.tier = 'POSSIBLE';
       result.reasons.push('Same normalized name and contact number');
+      result.candidateFarmerIds.push(row.farmer_id);
+      return;
+    }
+
+    if (!rsbsa && !rowRsbsa && sharedPhone && barangay && barangay === rowBarangay) {
+      if (result.tier !== 'STRONG') result.tier = 'POSSIBLE';
+      result.reasons.push('No RSBSA number; same contact number and residence barangay');
       result.candidateFarmerIds.push(row.farmer_id);
       return;
     }
