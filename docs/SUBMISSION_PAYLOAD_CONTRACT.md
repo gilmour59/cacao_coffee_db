@@ -15,7 +15,7 @@ The key rule is:
   "farmer": {
     "rsbsa_registration_status": "REGISTERED_ID_AVAILABLE",
     "rsbsa_no": "example",
-    "rsbsa_capture_method": "ID_OCR",
+    "rsbsa_capture_method": "MANUAL",
     "rsbsa_info_confirmed": true,
     "first_name": "Juan",
     "middle_name": "Santos",
@@ -122,7 +122,7 @@ Validator
         canonical Farmer/Farm/Profile rows
 ```
 
-The staged payload intentionally stores no RSBSA ID image. Keys suggesting image/photo/base64/blob data are removed before the payload is serialized.
+V1 uses manual RSBSA number entry only. No RSBSA ID image is captured or OCR-processed. The staged payload also strips keys suggesting image/photo/base64/blob data before serialization as a defense-in-depth safeguard.
 
 ## Canonical write behavior
 
