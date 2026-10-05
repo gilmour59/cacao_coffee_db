@@ -814,10 +814,10 @@
     const payload = collectPayload();
     if (!validateClientPayload(payload)) return;
 
-    const pre = document.getElementById('review-summary');
-    pre.textContent = JSON.stringify(payload, null, 2);
-    pre.classList.remove('is-hidden');
-    pre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const summary = document.getElementById('review-summary');
+    summary.innerHTML = renderHumanReviewHtml(payload, { audience: 'farmer' });
+    summary.classList.remove('is-hidden');
+    summary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   async function submitProfilingForm(event) {
@@ -848,9 +848,14 @@
         'is-success'
       );
 
-      document.getElementById('review-summary').textContent =
-        JSON.stringify(result, null, 2);
-      document.getElementById('review-summary').classList.remove('is-hidden');
+      const summary = document.getElementById('review-summary');
+      summary.innerHTML =
+        '<div class="review-success">' +
+          '<strong>Submission received.</strong>' +
+          '<div>Reference: <code>' + escapeHtml(result.submission_id || '') + '</code></div>' +
+          '<div>Status: ' + escapeHtml(result.status || '') + '</div>' +
+        '</div>';
+      summary.classList.remove('is-hidden');
 
       appState.submissionCompleted = true;
       document.getElementById('submit-profile').disabled = true;
@@ -882,7 +887,7 @@
     body.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
 
     try {
-      const rows = await serverCall('listPendingSubmissions');
+      const rows = (await serverCall('listPendingSubmissions')) || [];
       body.innerHTML = '';
 
       if (!rows.length) {
@@ -930,18 +935,15 @@
   function renderValidatorReview(review) {
     const submission = review.submission || {};
     const payload = review.payload || {};
-    const farmer = payload.farmer || {};
-    const flags = submission.flags || [];
+    const flags = Array.isArray(submission.flags) ? submission.flags : [];
 
     let html =
-      '<p><strong>Submission:</strong> <code>' + escapeHtml(submission.submission_id || '') + '</code></p>' +
-      '<p><strong>Type:</strong> ' + escapeHtml(submission.submission_type || '') +
-      ' &nbsp; <strong>Year:</strong> ' + escapeHtml(String(submission.reference_year || '')) +
-      ' &nbsp; <strong>Classification:</strong> ' + escapeHtml(submission.classification || '') + '</p>' +
-      '<p><strong>Farmer:</strong> ' + escapeHtml(
-        [farmer.first_name, farmer.middle_name, farmer.last_name, farmer.suffix].filter(Boolean).join(' ') ||
-        submission.farmer_id || 'New farmer'
-      ) + '</p>';
+      '<div class="validator-overview">' +
+        '<div><span class="review-kicker">Submission</span><code>' + escapeHtml(submission.submission_id || '') + '</code></div>' +
+        '<div><span class="review-kicker">Type</span>' + escapeHtml(prettyCode(submission.submission_type || '')) + '</div>' +
+        '<div><span class="review-kicker">Year</span>' + escapeHtml(String(submission.reference_year || '')) + '</div>' +
+        '<div><span class="review-kicker">Classification</span>' + escapeHtml(prettyCode(submission.classification || '')) + '</div>' +
+      '</div>';
 
     if (flags.length) {
       html += '<div class="validator-flags">' +
@@ -949,22 +951,285 @@
           return '<span class="validator-flag">' + escapeHtml(flag) + '</span>';
         }).join('') +
         '</div>';
+    } else {
+      html += '<p class="review-ok">No system flags were raised for this submission.</p>';
     }
 
-    html +=
-      '<details class="mt-4"><summary class="has-text-weight-semibold">Submitted payload</summary>' +
-      '<pre class="review-summary">' + escapeHtml(JSON.stringify(payload, null, 2)) + '</pre></details>';
+    html += renderHumanReviewHtml(payload, { audience: 'validator' });
 
     if (submission.comparison && Object.keys(submission.comparison).length) {
+      html += renderComparisonHtml(submission.comparison);
+    }
+
+    const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+    const environment = appState.bootstrap && appState.bootstrap.app
+      ? String(appState.bootstrap.app.environment || '').toUpperCase()
+      : '';
+
+    if (environment === 'TEST' && staff && staff.role === 'ADMIN') {
       html +=
-        '<details class="mt-4"><summary class="has-text-weight-semibold">Previous vs current comparison</summary>' +
-        '<pre class="review-summary">' + escapeHtml(JSON.stringify(submission.comparison, null, 2)) + '</pre></details>';
+        '<details class="developer-details">' +
+          '<summary>Developer details (TEST only)</summary>' +
+          '<div class="developer-detail-block"><strong>Submitted payload</strong>' +
+            '<pre>' + escapeHtml(JSON.stringify(payload, null, 2)) + '</pre></div>' +
+          '<div class="developer-detail-block"><strong>Comparison data</strong>' +
+            '<pre>' + escapeHtml(JSON.stringify(submission.comparison || {}, null, 2)) + '</pre></div>' +
+        '</details>';
     }
 
     document.getElementById('validator-summary').innerHTML = html;
     renderIdentityReviews(review.identity_reviews || []);
     document.getElementById('validator-remarks').value = '';
   }
+
+  function renderHumanReviewHtml(payload, options) {
+    const audience = options && options.audience ? options.audience : 'farmer';
+    const farmer = payload.farmer || {};
+    const farms = Array.isArray(payload.farms) ? payload.farms : [];
+    const facilities = Array.isArray(payload.facilities) ? payload.facilities : [];
+    const received = Array.isArray(payload.interventions_received) ? payload.interventions_received : [];
+    const needs = Array.isArray(payload.intervention_needs) ? payload.intervention_needs : [];
+
+    let html = '<div class="human-review">';
+
+    html += reviewSection(
+      'Farmer Information',
+      [
+        reviewLine('Name', fullName(farmer)),
+        reviewLine('RSBSA', farmer.rsbsa_registration_status === 'NOT_REGISTERED'
+          ? 'Not yet registered'
+          : (farmer.rsbsa_no || 'Registered')),
+        reviewLine('Sex', prettyCode(farmer.sex)),
+        reviewLine('Marital Status', referenceLabel('maritalStatuses', 'marital_status_code', 'marital_status_name', farmer.marital_status_code)),
+        reviewLine('Contact', farmer.contact_no),
+        reviewLine('Alternate Contact', farmer.alternate_contact_no),
+        reviewLine('Email', farmer.email),
+        reviewLine('Association', farmer.association_name),
+        reviewLine('Residence', formatLocation(
+          farmer.residence_province_code,
+          farmer.residence_lgu_code,
+          farmer.residence_barangay_code,
+          [
+            farmer.residence_house_lot_block,
+            farmer.residence_street_road,
+            farmer.residence_sitio_purok_zone,
+            farmer.residence_landmark_detail
+          ]
+        ))
+      ].filter(Boolean).join('')
+    );
+
+    farms.forEach(function(farm, index) {
+      const crops = Array.isArray(farm.crops) ? farm.crops : [];
+      let farmBody = [
+        reviewLine('Farm Name / Local ID', farm.farm_name_local_id || ('Farm ' + (index + 1))),
+        reviewLine('Tenure', referenceLabel('tenure', 'tenure_code', 'tenure_name', farm.tenure_code)),
+        reviewLine('Total Farm Area', numberText(farm.total_farm_area_ha, ' ha')),
+        reviewLine('Farm Address', farm.farm_address),
+        reviewLine('Location', formatLocation(farm.province_code, farm.lgu_code, farm.barangay_code, [])),
+        reviewLine('Topography', referenceLabel('topographies', 'topography_code', 'topography_name', farm.topography_code)),
+        reviewLine('Road Access Distance', numberText(farm.road_distance_km, ' km')),
+        reviewLine('Water Source', (farm.water_sources || []).map(function(item) {
+          return referenceLabel('waterSources', 'water_source_code', 'water_source_name', item.water_source_code);
+        }).filter(Boolean).join(', ')),
+        reviewLine('Map Point', farm.latitude !== undefined && farm.longitude !== undefined
+          ? String(farm.latitude) + ', ' + String(farm.longitude) + ' (' + prettyCode(farm.location_capture_method) + ')'
+          : '')
+      ].filter(Boolean).join('');
+
+      crops.forEach(function(crop) {
+        farmBody += renderCropReviewHtml(crop);
+      });
+
+      html += reviewSection('Farm ' + (index + 1), farmBody);
+    });
+
+    html += reviewSection(
+      'Facilities / Equipment',
+      facilities.length
+        ? facilities.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(item.description || item.facility_description || 'Facility / Equipment') + '</strong>' +
+              reviewLine('Quantity', item.quantity || item.facility_quantity) +
+              reviewLine('Capacity', item.capacity || item.facility_capacity) +
+              reviewLine('Model / Description', item.model_description || item.facility_model) +
+              reviewLine('Condition / Status', item.condition_status || item.facility_condition) +
+              reviewLine('Utilization', prettyCode(item.utilization_status || item.facility_utilization)) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    html += reviewSection(
+      'Interventions Received',
+      received.length
+        ? received.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(referenceLabel('interventionTypes', 'intervention_type_code', 'intervention_type_name', item.intervention_type_code || item.type_code)) + '</strong>' +
+              reviewLine('Provider / Source', item.provider_source || item.provider) +
+              reviewLine('Year', item.year_received || item.year) +
+              reviewLine('Details', item.details || item.remarks) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    html += reviewSection(
+      'Interventions Needed',
+      needs.length
+        ? needs.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(referenceLabel('interventionTypes', 'intervention_type_code', 'intervention_type_name', item.intervention_type_code || item.type_code)) + '</strong>' +
+              reviewLine('Priority', prettyCode(item.priority || item.priority_code)) +
+              reviewLine('Details', item.details || item.remarks) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    if (audience === 'farmer') {
+      html += '<p class="review-guidance">Please review the information above before submitting it for validation.</p>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function renderCropReviewHtml(crop) {
+    const plantings = Array.isArray(crop.plantings) ? crop.plantings : [];
+    const production = Array.isArray(crop.production) ? crop.production : [];
+    const commodity = prettyCode(crop.commodity_code || '');
+
+    let body =
+      '<div class="crop-review">' +
+        '<h4>' + escapeHtml(commodity) + '</h4>' +
+        '<div class="review-grid">' +
+          reviewLine('Planted Area', numberText(crop.area_planted_ha, ' ha')) +
+          reviewLine('Newly Planted', crop.trees_newly_planted) +
+          reviewLine('Non-bearing', crop.trees_non_bearing) +
+          reviewLine('Bearing', crop.trees_bearing) +
+          reviewLine('Mortality', crop.mortality_count) +
+        '</div>';
+
+    body += '<div class="review-subgroup"><strong>Varieties / Plantings</strong>';
+    if (plantings.length) {
+      body += plantings.map(function(item) {
+        return '<div class="review-list-item">' +
+          escapeHtml(referenceLabel('varieties', 'variety_code', 'variety_name', item.variety_code)) +
+          (item.year_planted ? ' · Planted ' + escapeHtml(String(item.year_planted)) : '') +
+        '</div>';
+      }).join('');
+    } else {
+      body += '<p class="review-empty">None entered.</p>';
+    }
+    body += '</div>';
+
+    body += '<div class="review-subgroup"><strong>Production per Harvest</strong>';
+    if (production.length) {
+      body += production.map(function(item) {
+        return '<div class="review-list-item">' +
+          reviewLine('Harvest Date', item.harvest_date) +
+          reviewLine('Year', item.production_year || item.year) +
+          reviewLine('Volume', numberText(item.production_volume_kg, ' kg')) +
+          reviewLine('Price / kg', item.selling_price_per_kg !== '' && item.selling_price_per_kg !== undefined
+            ? '₱' + Number(item.selling_price_per_kg).toLocaleString()
+            : '') +
+        '</div>';
+      }).join('');
+    } else {
+      body += '<p class="review-empty">No harvest information entered.</p>';
+    }
+    body += '</div></div>';
+
+    return body;
+  }
+
+  function renderComparisonHtml(comparison) {
+    const entries = Object.keys(comparison || {});
+    if (!entries.length) return '';
+
+    let html = '<section class="review-section comparison-section"><h3>Previous vs Submitted</h3>';
+    entries.forEach(function(key) {
+      const value = comparison[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        html += '<div class="review-list-item"><strong>' + escapeHtml(prettyCode(key)) + '</strong>';
+        Object.keys(value).forEach(function(innerKey) {
+          html += reviewLine(prettyCode(innerKey), typeof value[innerKey] === 'object'
+            ? JSON.stringify(value[innerKey])
+            : value[innerKey]);
+        });
+        html += '</div>';
+      } else {
+        html += reviewLine(prettyCode(key), value);
+      }
+    });
+    html += '</section>';
+    return html;
+  }
+
+  function reviewSection(title, body) {
+    return '<section class="review-section"><h3>' + escapeHtml(title) + '</h3>' + body + '</section>';
+  }
+
+  function reviewLine(label, value) {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    return '<div class="review-row"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(String(value)) + '</strong></div>';
+  }
+
+  function fullName(farmer) {
+    return [
+      farmer.first_name,
+      farmer.middle_name,
+      farmer.last_name,
+      farmer.suffix
+    ].filter(Boolean).join(' ');
+  }
+
+  function prettyCode(value) {
+    return String(value || '')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, function(letter) { return letter.toUpperCase(); });
+  }
+
+  function numberText(value, suffix) {
+    if (value === '' || value === undefined || value === null) return '';
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toLocaleString() + (suffix || '') : String(value);
+  }
+
+  function referenceLabel(refName, valueField, labelField, value) {
+    const target = String(value || '');
+    const row = getRefs(refName).find(function(item) {
+      return String(item[valueField] || '') === target;
+    });
+    return row ? String(row[labelField] || target) : prettyCode(target);
+  }
+
+  function formatLocation(provinceCode, lguCode, barangayCode, localParts) {
+    const locations = appState.bootstrap && appState.bootstrap.locations
+      ? appState.bootstrap.locations
+      : { provinces: [], lgus: [], barangays: [] };
+
+    const province = (locations.provinces || []).find(function(item) {
+      return String(item.province_code || '') === String(provinceCode || '');
+    });
+    const lgu = (locations.lgus || []).find(function(item) {
+      return String(item.lgu_code || '') === String(lguCode || '');
+    });
+    const barangay = (locations.barangays || []).find(function(item) {
+      return String(item.barangay_code || '') === String(barangayCode || '');
+    });
+
+    return (localParts || []).concat([
+      barangay && barangay.barangay_name,
+      lgu && lgu.lgu_name,
+      province && province.province_name
+    ]).filter(function(value) {
+      return value !== undefined && value !== null && String(value).trim() !== '';
+    }).join(', ');
+  }
+
 
   function renderIdentityReviews(reviews) {
     const section = document.getElementById('identity-review-section');
