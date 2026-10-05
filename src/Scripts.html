@@ -966,7 +966,14 @@
         const tr = document.createElement('tr');
         tr.innerHTML =
           '<td><code>' + escapeHtml(row.submission_id) + '</code></td>' +
-          '<td>' + escapeHtml(row.subject_name || '—') + '</td>' +
+          '<td>' +
+            '<div>' + escapeHtml(row.subject_name || '—') + '</div>' +
+            (row.possible_duplicate
+              ? '<span class="duplicate-badge">Possible Duplicate' +
+                (row.pending_duplicate_count ? ' · ' + escapeHtml(String(row.pending_duplicate_count)) + ' pending match' + (row.pending_duplicate_count > 1 ? 'es' : '') : '') +
+                '</span>'
+              : '') +
+          '</td>' +
           '<td>' + escapeHtml(row.submission_type || '') + '</td>' +
           '<td>' + escapeHtml(String(row.reference_year || '')) + '</td>' +
           '<td>' + escapeHtml(row.classification || '') + '</td>' +
@@ -1012,6 +1019,21 @@
         '<div><span class="review-kicker">Classification</span>' + escapeHtml(prettyCode(submission.classification || '')) + '</div>' +
       '</div>';
 
+    const pendingDuplicateCandidates = Array.isArray(review.pending_duplicate_candidates)
+      ? review.pending_duplicate_candidates
+      : [];
+    const liveIdentityCandidates = Array.isArray(review.live_identity_candidates)
+      ? review.live_identity_candidates
+      : [];
+    const hasDuplicateSignal =
+      pendingDuplicateCandidates.length > 0 ||
+      liveIdentityCandidates.length > 0 ||
+      String(review.live_identity_tier || 'NONE') !== 'NONE';
+
+    if (hasDuplicateSignal) {
+      html += renderDuplicateReviewPanel(review, payload);
+    }
+
     if (flags.length) {
       html += '<div class="validator-flags">' +
         flags.map(function(flag) {
@@ -1047,6 +1069,81 @@
     document.getElementById('validator-summary').innerHTML = html;
     renderIdentityReviews(review.identity_reviews || []);
     document.getElementById('validator-remarks').value = '';
+  }
+
+  function renderDuplicateReviewPanel(review, payload) {
+    const submittedFarmer = payload.farmer || {};
+    const pending = Array.isArray(review.pending_duplicate_candidates)
+      ? review.pending_duplicate_candidates
+      : [];
+    const canonical = Array.isArray(review.live_identity_candidates)
+      ? review.live_identity_candidates
+      : [];
+    const reasons = Array.isArray(review.live_identity_reasons)
+      ? review.live_identity_reasons
+      : [];
+
+    let html =
+      '<section class="duplicate-review-panel">' +
+        '<div class="duplicate-review-heading">' +
+          '<span class="duplicate-badge duplicate-badge-large">Possible Duplicate</span>' +
+          '<strong>Reference-check before approving</strong>' +
+        '</div>' +
+        '<p class="duplicate-review-note">The system found identity signals that may refer to the same farmer. This does not automatically merge records.</p>';
+
+    canonical.forEach(function(candidate) {
+      html +=
+        '<div class="duplicate-comparison">' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Submitted Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(submittedFarmer) || '—') + '</strong>' +
+            reviewLine('RSBSA', submittedFarmer.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', submittedFarmer.contact_no) +
+            reviewLine('Barangay Code', submittedFarmer.residence_barangay_code) +
+          '</div>' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Existing Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(candidate) || '—') + '</strong>' +
+            reviewLine('Farmer ID', candidate.farmer_id) +
+            reviewLine('RSBSA', candidate.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', candidate.contact_no) +
+            reviewLine('Barangay Code', candidate.residence_barangay_code) +
+            reviewLine('Status', prettyCode(candidate.record_status)) +
+          '</div>' +
+        '</div>';
+    });
+
+    pending.forEach(function(match) {
+      const candidate = match.farmer || {};
+      html +=
+        '<div class="duplicate-comparison">' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Submitted Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(submittedFarmer) || '—') + '</strong>' +
+            reviewLine('RSBSA', submittedFarmer.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', submittedFarmer.contact_no) +
+            reviewLine('Barangay Code', submittedFarmer.residence_barangay_code) +
+          '</div>' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Other Pending Submission</span>' +
+            '<strong>' + escapeHtml(fullName(candidate) || '—') + '</strong>' +
+            reviewLine('Submission', match.submission_id) +
+            reviewLine('Match Tier', prettyCode(match.tier)) +
+            reviewLine('RSBSA', candidate.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', candidate.contact_no) +
+            reviewLine('Barangay Code', candidate.residence_barangay_code) +
+            reviewLine('Reason', (match.reasons || []).join('; ')) +
+          '</div>' +
+        '</div>';
+    });
+
+    if (reasons.length) {
+      html += '<div class="duplicate-reasons"><strong>Detected reason:</strong> ' +
+        escapeHtml(reasons.join('; ')) + '</div>';
+    }
+
+    html += '</section>';
+    return html;
   }
 
   function renderHumanReviewHtml(payload, options) {
