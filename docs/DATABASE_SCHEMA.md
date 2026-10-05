@@ -321,6 +321,24 @@ Canonical Farmer/Farm/Profile records are materialized only after Validator appr
 
 ---
 
+## Submissions
+
+Submission records are staged workflow records. They are never hard-deleted through the normal Validator UI.
+
+Additional workflow fields:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| void_reason | enum | no | `DUPLICATE_SUBMISSION` or `SPAM_INVALID` when status is `VOIDED` |
+| duplicate_of_reference | text | conditional | Submission ID or Farmer ID used for reference when a submission is voided as duplicate |
+| validation_remarks | text | conditional | Required for Return and Spam/Invalid; optional for Approve and Duplicate |
+
+Supported workflow statuses include `PENDING`, `APPROVED`, `RETURNED`, and `VOIDED`.
+
+A `VOIDED` submission remains in the audit trail and must never materialize canonical Farmer/Farm/Profile records. Pending identity-review rows attached to a voided submission are closed with the resolution `SUBMISSION_VOIDED`.
+
+---
+
 ## Profiling_Invitations
 
 Secure bearer links for existing-farmer profiling. One invitation is tied to one farmer, reference period, and purpose.
