@@ -37,6 +37,17 @@ function evaluateIdentitySignals_(farmerPayload) {
       return;
     }
 
+    const nearRsbsaReason = rsbsa && rowRsbsa
+      ? getRsbsaNearMatchReason_(rsbsa, rowRsbsa)
+      : '';
+
+    if (nearRsbsaReason) {
+      if (result.tier !== 'STRONG') result.tier = 'POSSIBLE';
+      result.reasons.push(nearRsbsaReason);
+      result.candidateFarmerIds.push(row.farmer_id);
+      return;
+    }
+
     if (first && last && phone &&
         first === rowFirst && last === rowLast && phone === rowPhone) {
       if (result.tier !== 'STRONG') result.tier = 'POSSIBLE';
