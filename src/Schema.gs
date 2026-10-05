@@ -52,7 +52,7 @@ const SHEET_SCHEMAS = Object.freeze({
     'submission_id','farmer_id','invitation_id','submission_type','reference_year','status',
     'payload_json','classification','flag_reasons_json','comparison_json',
     'submitted_at','submitted_by','validated_at','validated_by','validation_remarks',
-    'created_at','updated_at'
+    'void_reason','duplicate_of_reference','created_at','updated_at'
   ],
   Profiling_Invitations: [
     'invitation_id','farmer_id','farm_id','reference_year','purpose','token_hash','status',
