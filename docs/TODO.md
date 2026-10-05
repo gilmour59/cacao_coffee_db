@@ -13,6 +13,7 @@ Completed/working in TEST:
 - [x] Double-submit safeguards in both client and server.
 - [x] Human-readable Farmer review and Validator review; raw payload is TEST Admin/developer-only.
 - [x] Validator Queue, Approve, Return, and Identity Review UI/backend are implemented.
+- [x] Validator can void duplicate/spam submissions without hard-deleting the audit trail.
 - [x] Canonical materialization services for Farmer, Farm, Profiling Round, Planting/Observation, Production, Facilities, Interventions, and Needs are implemented.
 - [x] Change classification service exists for NEW_ENTRY, NO_CHANGE, MODIFICATION, EXPANSION, and ANOMALY.
 - [x] Secure invitation backend exists for ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, and NEW_FARM.
