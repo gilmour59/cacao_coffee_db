@@ -1,5 +1,36 @@
 # Project TODO
 
+## Current status — 2026-10-05
+
+**Active milestone:** TEST smoke testing of the first end-to-end single-farm vertical slice.
+
+Completed/working in TEST:
+- [x] TEST Google Sheet, Apps Script project, Script Properties, local clasp mapping, and push workflow.
+- [x] Public/new-farmer single-farm intake UI with responsive mobile-first styling.
+- [x] Manual RSBSA flow; OCR removed.
+- [x] Exact and conservative near-duplicate RSBSA identity checks.
+- [x] PENDING submission staging before canonical writes.
+- [x] Double-submit safeguards in both client and server.
+- [x] Human-readable Farmer review and Validator review; raw payload is TEST Admin/developer-only.
+- [x] Validator Queue, Approve, Return, and Identity Review UI/backend are implemented.
+- [x] Canonical materialization services for Farmer, Farm, Profiling Round, Planting/Observation, Production, Facilities, Interventions, and Needs are implemented.
+- [x] Change classification service exists for NEW_ENTRY, NO_CHANGE, MODIFICATION, EXPANSION, and ANOMALY.
+- [x] Secure invitation backend exists for ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, and NEW_FARM.
+- [x] PSGC pilot references loaded for Iloilo → Pototan → 50 barangays.
+
+In progress now:
+- [ ] Finish Smoke Test #12: approve `SUB-2026-000001` and verify canonical rows + Audit_Log.
+- [ ] Run Return-for-Correction smoke test.
+- [ ] Run exact/near-duplicate RSBSA tests.
+- [ ] Test existing-farmer secure-link flow: annual profile, same-year correction, same-year expansion, and new-year round.
+- [ ] Extend browser UI from one farm to multiple farms.
+- [ ] Add staff-facing invitation generation/search/resend workflow.
+- [ ] Add public endpoint rate/abuse protection.
+- [ ] Prepare reporting/Looker Studio views.
+- [ ] Run role-isolation, mobile, concurrency, and security UAT.
+- [ ] Prepare PROD resources under HVCP ownership.
+
+
 ## A. Requirements and data model
 
 - [x] Select Apps Script + Google Sheets for V1.
@@ -52,10 +83,10 @@
 - [x] Document secure identity/deduplication rules.
 - [x] Document secure link-based profiling flow.
 - [x] Add profiling swimlane documentation.
-- [ ] Install/configure clasp locally.
-- [ ] Create TEST Apps Script project.
-- [ ] Add TEST script ID to local `.clasp.test.json`.
-- [ ] Verify TEST push/pull workflow.
+- [x] Install/configure clasp locally.
+- [x] Create TEST Apps Script project.
+- [x] Add TEST script ID to local `.clasp.test.json`.
+- [x] Verify TEST push/pull workflow.
 - [ ] Create PROD clasp mapping after HVCP production project exists.
 
 ## B1. V1 domain-flow restructure
@@ -106,33 +137,33 @@
 
 ## D. Apps Script core
 
-- [ ] Configure Script Properties.
-- [ ] Implement repository helpers.
-- [ ] Implement batch reads/writes.
-- [ ] Implement ID generation under LockService.
+- [x] Configure Script Properties.
+- [x] Implement repository helpers.
+- [x] Implement batch reads/writes.
+- [x] Implement ID generation under LockService.
 - [ ] Implement standardized responses/errors.
-- [ ] Implement reference-data bootstrap.
-- [ ] Implement audit logging.
-- [ ] Implement role/authorization checks server-side.
-- [ ] Implement geographic-scope checks if required.
-- [ ] Ensure browser/client values cannot bypass server authorization.
-- [ ] Implement server-side identity/deduplication service.
-- [ ] Implement secure invitation token generation and hashing.
-- [ ] Implement invitation status/expiry/revocation handling.
+- [x] Implement reference-data bootstrap.
+- [x] Implement audit logging.
+- [x] Implement role/authorization checks server-side.
+- [x] Implement geographic-scope checks if required.
+- [x] Ensure browser/client values cannot bypass server authorization.
+- [x] Implement server-side identity/deduplication service.
+- [x] Implement secure invitation token generation and hashing.
+- [x] Implement invitation status/expiry/revocation handling.
 - [ ] Use LockService for identity review resolution, canonical merges, and critical link/submission transitions.
 
 ## E. New farmer public intake
 
-- [ ] Public generic intake page for NEW farmers.
-- [ ] RSBSA registration-state selector.
-- [ ] Manual RSBSA entry.
+- [x] Public generic intake page for NEW farmers.
+- [x] RSBSA registration-state selector.
+- [x] Manual RSBSA entry.
 - [x] Manual RSBSA number entry only; no ID image capture or OCR in V1.
 - [x] User verification/edit step for manually entered RSBSA number.
 - [x] Add conservative near-duplicate RSBSA detection for one-character typos or adjacent transpositions.
-- [ ] Capture farmer/farm/profile data.
-- [ ] Save as PENDING submission; do not immediately create an ACTIVE canonical farmer.
-- [ ] Run server-side duplicate detection before validation.
-- [ ] Never expose existing farmer candidate PII to public respondents.
+- [x] Capture farmer/farm/profile data.
+- [x] Save as PENDING submission; do not immediately create an ACTIVE canonical farmer.
+- [x] Run server-side duplicate detection before validation.
+- [x] Never expose existing farmer candidate PII to public respondents.
 - [ ] Add public endpoint rate/abuse protections.
 
 ## F. Existing farmer secure-link profiling
@@ -141,69 +172,69 @@
 - [ ] Generate personalized profiling invitation.
 - [ ] Link invitation to farmer_id + reference period + purpose.
 - [ ] Purpose support: ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, NEW_FARM.
-- [ ] Store token hash rather than raw token where practical.
-- [ ] Support ACTIVE, SUBMITTED, RETURNED, EXPIRED, REVOKED statuses.
+- [x] Store token hash rather than raw token where practical.
+- [x] Support ACTIVE, SUBMITTED, RETURNED, EXPIRED, REVOKED statuses.
 - [ ] Allow safe resume while ACTIVE.
 - [ ] Lock/invalidate after final submission.
 - [ ] Staff can resend/revoke/regenerate according to HVCP-approved policy.
-- [ ] Existing farmer link loads only the permitted farmer/profile context.
-- [ ] No username/password required for farmer V1.
+- [x] Existing farmer link loads only the permitted farmer/profile context.
+- [x] No username/password required for farmer V1.
 - [ ] Encoder-assisted path available when farmer cannot use the link.
 
 ## G. Time-series profiling and farm changes
 
-- [ ] Create new Profiling_Round for each annual cycle.
+- [x] Create new Profiling_Round for each annual cycle.
 - [ ] Additional Profiling_Round/event for expansion when required.
-- [ ] Preserve previous approved yearly values.
+- [x] Preserve previous approved yearly values.
 - [ ] Separate master-data correction from new time-series observation.
-- [ ] Commodity/variety/year planted.
-- [ ] Newly planted/non-bearing/bearing tree counts per commodity per farm.
-- [ ] Mortality count per commodity per farm, updateable during the active profiling period.
-- [ ] Area planted.
-- [ ] Per-harvest production volume in kg and selling price per kg.
-- [ ] Farmer-level facilities/equipment: free-text item, quantity, capacity, model/description, condition/status, utilization.
-- [ ] Farmer-level interventions received: Training, Planting Materials, Fertilizer + provider/source + year.
-- [ ] Farmer-level intervention needs using the same three categories + Low/Medium/High priority.
+- [x] Commodity/variety/year planted.
+- [x] Newly planted/non-bearing/bearing tree counts per commodity per farm.
+- [x] Mortality count per commodity per farm, updateable during the active profiling period.
+- [x] Area planted.
+- [x] Per-harvest production volume in kg and selling price per kg.
+- [x] Farmer-level facilities/equipment: free-text item, quantity, capacity, model/description, condition/status, utilization.
+- [x] Farmer-level interventions received: Training, Planting Materials, Fertilizer + provider/source + year.
+- [x] Farmer-level intervention needs using the same three categories + Low/Medium/High priority.
 - [ ] New farm/expansion structural workflow.
-- [ ] Review screen and submit.
+- [x] Review screen and submit.
 
 ## H. Change detection, anomaly detection, and validation
 
-- [ ] Compare incoming submission to latest approved relevant record.
-- [ ] Classify NO_CHANGE.
-- [ ] Classify MODIFICATION.
-- [ ] Classify NEW_ENTRY.
-- [ ] Classify EXPANSION.
-- [ ] Classify ANOMALY.
-- [ ] Duplicate/RSBSA conflict flags.
-- [ ] Identity correction flags.
-- [ ] Farm-area change flags.
-- [ ] Tree-count change flags.
-- [ ] Production-change flags.
+- [x] Compare incoming submission to latest approved relevant record.
+- [x] Classify NO_CHANGE.
+- [x] Classify MODIFICATION.
+- [x] Classify NEW_ENTRY.
+- [x] Classify EXPANSION.
+- [x] Classify ANOMALY.
+- [x] Duplicate/RSBSA conflict flags.
+- [x] Identity correction flags.
+- [x] Farm-area change flags.
+- [x] Tree-count change flags.
+- [x] Production-change flags.
 - [ ] New farm/commodity/variety flags.
 - [ ] Thresholds/rules configurable and documented.
-- [ ] Anomaly flag must not auto-reject.
-- [ ] Validator sees prior vs submitted values and reasons.
-- [ ] Approve.
-- [ ] Return for correction.
+- [x] Anomaly flag must not auto-reject.
+- [x] Validator sees prior vs submitted values and reasons.
+- [x] Approve.
+- [x] Return for correction.
 - [ ] Confirm expansion/new farm.
-- [ ] Route identity/duplicate cases for additional review.
-- [ ] Protected identity corrections remain audited.
+- [x] Route identity/duplicate cases for additional review.
+- [x] Protected identity corrections remain audited.
 - [ ] Canonical duplicate merges remain Admin-controlled and non-destructive.
 
 ## I. Farm and location
 
-- [ ] Province dropdown.
-- [ ] Municipality/City cascading dropdown.
-- [ ] Barangay cascading dropdown.
-- [ ] Build client-side lookup maps.
-- [ ] Leaflet map.
-- [ ] Map pin selection.
-- [ ] Optional device-GPS button if feasible.
-- [ ] Save latitude/longitude.
-- [ ] Topography.
-- [ ] Road distance.
-- [ ] Source of water (multiple allowed): Shallow Well, Spring, River.
+- [x] Province dropdown.
+- [x] Municipality/City cascading dropdown.
+- [x] Barangay cascading dropdown.
+- [x] Build client-side lookup maps.
+- [x] Leaflet map.
+- [x] Map pin selection.
+- [x] Optional device-GPS button if feasible.
+- [x] Save latitude/longitude.
+- [x] Topography.
+- [x] Road distance.
+- [x] Source of water (multiple allowed): Shallow Well, Spring, River.
 
 ## J. Dashboard/reporting
 
