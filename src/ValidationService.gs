@@ -49,6 +49,82 @@ function normalizeRsbsaNo_(value) {
     .replace(/\s+/g, '');
 }
 
+function compactRsbsaNo_(value) {
+  return normalizeRsbsaNo_(value).replace(/[^A-Z0-9]/g, '');
+}
+
+function isAdjacentTransposition_(a, b) {
+  if (!a || !b || a.length !== b.length || a === b) return false;
+
+  const differences = [];
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) differences.push(i);
+    if (differences.length > 2) return false;
+  }
+
+  if (differences.length !== 2) return false;
+  const first = differences[0];
+  const second = differences[1];
+
+  return second === first + 1 &&
+    a[first] === b[second] &&
+    a[second] === b[first];
+}
+
+function levenshteinDistanceAtMost_(a, b, maxDistance) {
+  const left = String(a || '');
+  const right = String(b || '');
+  const max = Number(maxDistance || 0);
+
+  if (Math.abs(left.length - right.length) > max) return max + 1;
+  if (left === right) return 0;
+
+  let previous = Array.from({ length: right.length + 1 }, function(_, index) {
+    return index;
+  });
+
+  for (let i = 1; i <= left.length; i += 1) {
+    const current = [i];
+    let rowMin = current[0];
+
+    for (let j = 1; j <= right.length; j += 1) {
+      const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+      const value = Math.min(
+        current[j - 1] + 1,
+        previous[j] + 1,
+        previous[j - 1] + cost
+      );
+      current[j] = value;
+      if (value < rowMin) rowMin = value;
+    }
+
+    if (rowMin > max) return max + 1;
+    previous = current;
+  }
+
+  return previous[right.length];
+}
+
+function getRsbsaNearMatchReason_(submitted, existing) {
+  const left = compactRsbsaNo_(submitted);
+  const right = compactRsbsaNo_(existing);
+
+  if (!left || !right || left === right) return '';
+  if (left.length < 8 || right.length < 8) return '';
+  if (Math.abs(left.length - right.length) > 1) return '';
+
+  if (isAdjacentTransposition_(left, right)) {
+    return 'Possible RSBSA typo: adjacent digits/characters appear transposed';
+  }
+
+  const distance = levenshteinDistanceAtMost_(left, right, 1);
+  if (distance === 1) {
+    return 'Possible RSBSA typo: number differs by one character';
+  }
+
+  return '';
+}
+
 function normalizeNamePart_(value) {
   return String(value || '')
     .trim()
