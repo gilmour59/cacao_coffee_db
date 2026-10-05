@@ -479,7 +479,7 @@
 
     if (isUnregistered) {
       document.getElementById('rsbsa-no').value = '';
-      document.getElementById('rsbsa-confirmed').checked = true;
+      document.getElementById('rsbsa-confirmed').checked = false;
     } else {
       document.getElementById('rsbsa-confirmed').checked = false;
     }
@@ -624,7 +624,9 @@
         rsbsa_capture_method: status === 'NOT_REGISTERED'
           ? 'NOT_APPLICABLE'
           : 'MANUAL',
-        rsbsa_info_confirmed: document.getElementById('rsbsa-confirmed').checked,
+        rsbsa_info_confirmed: status === 'NOT_REGISTERED'
+          ? false
+          : document.getElementById('rsbsa-confirmed').checked,
         first_name: cleanValue('first-name'),
         middle_name: cleanValue('middle-name'),
         last_name: cleanValue('last-name'),
