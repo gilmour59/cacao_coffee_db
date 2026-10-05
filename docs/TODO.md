@@ -3,8 +3,8 @@
 ## A. Requirements and data model
 
 - [x] Select Apps Script + Google Sheets for V1.
-- [x] Define RSBSA states and client-side OCR direction.
-- [x] Do not retain RSBSA ID images.
+- [x] Define RSBSA registration states with manual number entry only; OCR removed from V1 to reduce capture/error risk.
+- [x] Do not capture or retain RSBSA ID images.
 - [x] Use PSGC Province → Municipality/City → Barangay references.
 - [x] Add approximate farm latitude/longitude.
 - [x] Define permanent Farmer Master + Farm Master + time-series profiling direction.
@@ -126,12 +126,9 @@
 - [ ] Public generic intake page for NEW farmers.
 - [ ] RSBSA registration-state selector.
 - [ ] Manual RSBSA entry.
-- [ ] Mobile image capture/file picker.
-- [ ] Browser Canvas preprocessing.
-- [ ] Tesseract.js OCR.
-- [ ] Parse RSBSA number and farmer name.
-- [ ] User verification/edit step.
-- [ ] Confirm image is never uploaded/retained.
+- [x] Manual RSBSA number entry only; no ID image capture or OCR in V1.
+- [x] User verification/edit step for manually entered RSBSA number.
+- [x] Add conservative near-duplicate RSBSA detection for one-character typos or adjacent transpositions.
 - [ ] Capture farmer/farm/profile data.
 - [ ] Save as PENDING submission; do not immediately create an ACTIVE canonical farmer.
 - [ ] Run server-side duplicate detection before validation.
@@ -246,7 +243,7 @@
 - [ ] Desktop.
 - [ ] Slow network.
 - [ ] Invalid/blank inputs.
-- [ ] OCR lighting/large-image/manual-correction tests.
+- [ ] Manual RSBSA entry and typo/transposition duplicate-detection tests.
 - [ ] PSGC/map accuracy.
 - [ ] Sheet write collision tests.
 - [ ] Direct Apps Script authorization-bypass tests.
@@ -275,5 +272,5 @@
 
 - [ ] Coordinate with RSBSA on parcel/geospatial boundary data availability, identifiers, format, and update process.
 - [ ] Define future parcel-data integration once RSBSA coordination is completed.
-- [ ] Confirm exact RSBSA number format from a privacy-safe sample ID for OCR tuning when coordination resumes.
+- [ ] Confirm exact RSBSA number format from a privacy-safe sample when RSBSA coordination resumes; no OCR tuning is planned for V1.
 - [ ] Revisit RSBSA parcel visualization/reference in the application after V1; do not build parcel digitizing/geotagging in the current MVP.
