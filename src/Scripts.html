@@ -46,9 +46,7 @@
     });
     document.getElementById('profiling-form').addEventListener('submit', submitProfilingForm);
     document.getElementById('preview-submission').addEventListener('click', previewSubmission);
-    document.getElementById('start-new-profile').addEventListener('click', function() {
-      window.location.reload();
-    });
+    document.getElementById('start-new-profile').addEventListener('click', resetForNewProfile);
 
     document.getElementById('use-device-location').addEventListener('click', useDeviceLocation);
 
@@ -873,6 +871,74 @@
         document.getElementById('submit-profile').classList.remove('is-loading');
         document.getElementById('submit-profile').disabled = true;
       }
+    }
+  }
+
+  function resetForNewProfile() {
+    if (appState.invitationToken) {
+      showMessage('A secure existing-farmer link cannot be reset into a new public profile.', 'is-warning');
+      return;
+    }
+
+    const form = document.getElementById('profiling-form');
+    form.reset();
+
+    appState.submissionCompleted = false;
+    appState.invitationContext = null;
+    appState.selectedSubmissionId = '';
+
+    document.getElementById('reference-year').value =
+      (appState.bootstrap && appState.bootstrap.app && appState.bootstrap.app.currentYear) ||
+      new Date().getFullYear();
+
+    document.getElementById('rsbsa-number-panel').classList.add('is-hidden');
+    document.getElementById('rsbsa-confirm-panel').classList.add('is-hidden');
+    document.getElementById('rsbsa-no').value = '';
+    document.getElementById('rsbsa-confirmed').checked = false;
+
+    populateReferenceControls();
+    setLocationCascade('res', '', '', '');
+    setLocationCascade('farm', '', '', '');
+
+    renderWaterSources();
+    renderCommoditySections();
+
+    document.getElementById('facility-rows').innerHTML = '';
+    document.getElementById('intervention-rows').innerHTML = '';
+    document.getElementById('need-rows').innerHTML = '';
+
+    setValue('existing-farm-id', '');
+    setValue('latitude', '');
+    setValue('longitude', '');
+    setValue('location-method', '');
+
+    if (appState.marker && appState.map) {
+      appState.map.removeLayer(appState.marker);
+      appState.marker = null;
+      appState.map.setView([10.75, 122.55], 9);
+    }
+
+    const summary = document.getElementById('review-summary');
+    summary.innerHTML = '';
+    summary.classList.add('is-hidden');
+
+    const submitButton = document.getElementById('submit-profile');
+    submitButton.classList.remove('is-loading');
+    submitButton.disabled = false;
+
+    document.getElementById('preview-submission').disabled = false;
+    document.getElementById('start-new-profile').classList.add('is-hidden');
+
+    clearMessage();
+
+    document.getElementById('intake-context-title').textContent = 'New farmer intake';
+    document.getElementById('intake-context-text').textContent =
+      'Submit the profile for Validator review. Approved records are added to the canonical database.';
+
+    document.getElementById('intake-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (appState.map) {
+      setTimeout(function() { appState.map.invalidateSize(); }, 50);
     }
   }
 
