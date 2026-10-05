@@ -11,7 +11,8 @@
     },
     map: null,
     marker: null,
-    submissionCompleted: false
+    submissionCompleted: false,
+    toastTimer: null
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -1465,15 +1466,46 @@
 
   function showMessage(message, className) {
     const el = document.getElementById('app-message');
-    el.className = 'notification ' + (className || 'is-info');
-    el.textContent = message;
+    const tone = className || 'is-info';
+
+    if (appState.toastTimer) {
+      clearTimeout(appState.toastTimer);
+      appState.toastTimer = null;
+    }
+
+    el.className = 'notification app-toast ' + tone;
+    el.setAttribute(
+      'role',
+      tone === 'is-danger' || tone === 'is-warning' ? 'alert' : 'status'
+    );
+
+    el.innerHTML =
+      '<div class="app-toast-content">' +
+        '<span>' + escapeHtml(message) + '</span>' +
+        '<button type="button" class="app-toast-close" aria-label="Dismiss notification">×</button>' +
+      '</div>';
+
+    el.querySelector('.app-toast-close').addEventListener('click', clearMessage);
     el.classList.remove('is-hidden');
+
+    const timeout = tone === 'is-danger'
+      ? 0
+      : (tone === 'is-warning' ? 8000 : 5000);
+
+    if (timeout) {
+      appState.toastTimer = setTimeout(clearMessage, timeout);
+    }
   }
 
   function clearMessage() {
+    if (appState.toastTimer) {
+      clearTimeout(appState.toastTimer);
+      appState.toastTimer = null;
+    }
+
     const el = document.getElementById('app-message');
     el.classList.add('is-hidden');
-    el.textContent = '';
+    el.innerHTML = '';
   }
 
   function handleServerError(error) {
