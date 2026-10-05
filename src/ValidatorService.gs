@@ -226,6 +226,74 @@ function returnSubmission(submissionId, remarks) {
   }, 15000);
 }
 
+function voidSubmission(submissionId, reason, duplicateReference, remarks) {
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR]);
+  const normalizedReason = requireOneOf_(
+    reason,
+    ['DUPLICATE_SUBMISSION','SPAM_INVALID'],
+    'void_reason'
+  );
+  const cleanRemarks = cleanText_(remarks);
+  const cleanDuplicateReference = cleanText_(duplicateReference);
+
+  if (normalizedReason === 'DUPLICATE_SUBMISSION' && !cleanDuplicateReference) {
+    throw new Error('A duplicate submission or farmer reference is required.');
+  }
+  if (normalizedReason === 'SPAM_INVALID' && !cleanRemarks) {
+    throw new Error('Remarks are required when marking a submission as spam/invalid.');
+  }
+
+  return withScriptLock_(function() {
+    const submission = findById_('Submissions', 'submission_id', submissionId);
+    if (!submission) throw new Error('Submission not found.');
+
+    const payload = parseSubmissionPayload_(submission);
+    assertSubmissionScopeForStaff_(staff, submission, payload);
+
+    if (String(submission.status || '').toUpperCase() !== 'PENDING') {
+      throw new Error('Only pending submissions can be voided.');
+    }
+
+    patchObjectRowByFieldUnlocked_('Submissions', 'submission_id', submissionId, {
+      status: 'VOIDED',
+      void_reason: normalizedReason,
+      duplicate_of_reference: normalizedReason === 'DUPLICATE_SUBMISSION'
+        ? cleanDuplicateReference
+        : '',
+      validated_at: new Date(),
+      validated_by: staff.user_email,
+      validation_remarks: cleanRemarks,
+      updated_at: new Date()
+    });
+
+    getIdentityReviewsForSubmission_(submissionId).forEach(function(review) {
+      if (String(review.review_status || '').toUpperCase() === 'RESOLVED') return;
+      patchObjectRowByFieldUnlocked_('Identity_Reviews', 'identity_review_id', review.identity_review_id, {
+        review_status: 'RESOLVED',
+        resolution: 'SUBMISSION_VOIDED',
+        resolved_by: staff.user_email,
+        resolved_at: new Date(),
+        resolution_notes: normalizedReason + (cleanRemarks ? ': ' + cleanRemarks : ''),
+        updated_at: new Date()
+      });
+    });
+
+    writeAuditUnlocked_('VOID_SUBMISSION', 'SUBMISSION', submissionId, {
+      void_reason: normalizedReason,
+      duplicate_of_reference: cleanDuplicateReference,
+      remarks: cleanRemarks
+    });
+
+    return {
+      ok: true,
+      submission_id: submissionId,
+      status: 'VOIDED',
+      void_reason: normalizedReason,
+      duplicate_of_reference: cleanDuplicateReference
+    };
+  }, 15000);
+}
+
 function resolveFarmerForApprovalUnlocked_(submission, payload, reviews) {
   const type = String(submission.submission_type || '').toUpperCase();
 
