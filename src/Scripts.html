@@ -64,6 +64,8 @@
     document.getElementById('refresh-validator').addEventListener('click', loadValidatorQueue);
     document.getElementById('approve-submission').addEventListener('click', approveSelectedSubmission);
     document.getElementById('return-submission').addEventListener('click', returnSelectedSubmission);
+    document.getElementById('duplicate-submission').addEventListener('click', voidSelectedSubmissionAsDuplicate);
+    document.getElementById('spam-submission').addEventListener('click', voidSelectedSubmissionAsSpam);
 
     bindLocationCascade('res');
     bindLocationCascade('farm');
@@ -1069,6 +1071,15 @@
     document.getElementById('validator-summary').innerHTML = html;
     renderIdentityReviews(review.identity_reviews || []);
     document.getElementById('validator-remarks').value = '';
+    const duplicateRef = document.getElementById('duplicate-reference');
+    if (duplicateRef) {
+      const candidates = Array.isArray(review.pending_duplicate_candidates)
+        ? review.pending_duplicate_candidates
+        : [];
+      duplicateRef.value = candidates.length === 1
+        ? String(candidates[0].submission_id || '')
+        : '';
+    }
   }
 
   function renderDuplicateReviewPanel(review, payload) {
@@ -1480,6 +1491,70 @@
 
       list.appendChild(card);
     });
+  }
+
+  async function voidSelectedSubmissionAsDuplicate() {
+    if (!appState.selectedSubmissionId) return;
+
+    const duplicateReference = cleanValue('duplicate-reference');
+    if (!duplicateReference) {
+      showMessage('Enter the duplicate submission or farmer reference before marking this entry as duplicate.', 'is-warning');
+      document.getElementById('duplicate-reference').focus();
+      return;
+    }
+
+    const button = document.getElementById('duplicate-submission');
+    button.classList.add('is-loading');
+
+    try {
+      await serverCall(
+        'voidSubmission',
+        appState.selectedSubmissionId,
+        'DUPLICATE_SUBMISSION',
+        duplicateReference,
+        document.getElementById('validator-remarks').value
+      );
+      showMessage('Submission marked as duplicate and removed from the active Validator Queue.', 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
+  }
+
+  async function voidSelectedSubmissionAsSpam() {
+    if (!appState.selectedSubmissionId) return;
+
+    const remarks = document.getElementById('validator-remarks').value.trim();
+    if (!remarks) {
+      showMessage('Enter a reason before marking the submission as spam/invalid.', 'is-warning');
+      document.getElementById('validator-remarks').focus();
+      return;
+    }
+
+    const button = document.getElementById('spam-submission');
+    button.classList.add('is-loading');
+
+    try {
+      await serverCall(
+        'voidSubmission',
+        appState.selectedSubmissionId,
+        'SPAM_INVALID',
+        '',
+        remarks
+      );
+      showMessage('Submission marked as spam/invalid and removed from the active Validator Queue.', 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
   }
 
   async function approveSelectedSubmission() {
