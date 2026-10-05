@@ -614,6 +614,18 @@
     border-color: var(--line) !important;
   }
 
+  .table.is-hoverable tbody tr:not(.is-selected):hover,
+  .table.is-hoverable tbody tr:not(.is-selected):hover > td,
+  .table.is-hoverable tbody tr:not(.is-selected):hover > th {
+    background: var(--green-100) !important;
+    color: var(--ink) !important;
+  }
+
+  .table.is-hoverable tbody tr:not(.is-selected):hover code {
+    background: #f7fbf8 !important;
+    color: var(--green-900) !important;
+  }
+
   @media (max-width: 768px) {
     :root {
       --tap: 50px;
