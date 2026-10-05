@@ -32,7 +32,7 @@ function listPendingSubmissions() {
         reference_year: row.reference_year,
         classification: row.classification,
         flags: parseJsonArray_(row.flag_reasons_json),
-        submitted_at: row.submitted_at,
+        submitted_at: toClientDateTime_(row.submitted_at),
         submitted_by: row.submitted_by,
         subject_name: subjectName
       };
@@ -82,7 +82,7 @@ function getSubmissionForReview(submissionId) {
       classification: row.classification,
       flags: parseJsonArray_(row.flag_reasons_json),
       comparison: parseJsonObject_(row.comparison_json),
-      submitted_at: row.submitted_at,
+      submitted_at: toClientDateTime_(row.submitted_at),
       submitted_by: row.submitted_by
     },
     payload: payload,
@@ -260,4 +260,14 @@ function parseJsonObject_(value) {
   } catch (error) {
     return {};
   }
+}
+
+
+function toClientDateTime_(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? '' : value.toISOString();
+  }
+  const parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
 }
