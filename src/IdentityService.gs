@@ -185,3 +185,98 @@ function createProtectedIdentityReviewForSubmissionUnlocked_(submissionId, farme
   appendObjectRowUnlocked_('Identity_Reviews', row);
   return row;
 }
+
+
+function evaluatePendingSubmissionIdentitySignalsUnlocked_(farmerPayload, excludeSubmissionId) {
+  const matches = [];
+  if (!farmerPayload) return matches;
+
+  const rsbsa = normalizeRsbsaNo_(farmerPayload.rsbsa_no);
+  const first = normalizeNamePart_(farmerPayload.first_name);
+  const last = normalizeNamePart_(farmerPayload.last_name);
+  const phone = normalizePhone_(farmerPayload.contact_no);
+  const alternatePhone = normalizePhone_(farmerPayload.alternate_contact_no);
+  const barangay = cleanText_(farmerPayload.residence_barangay_code);
+  const incomingPhones = [phone, alternatePhone].filter(Boolean);
+
+  getRowsAsObjects_('Submissions').forEach(function(row) {
+    if (String(row.submission_id || '') === String(excludeSubmissionId || '')) return;
+    if (String(row.status || '').toUpperCase() !== 'PENDING') return;
+    if (String(row.submission_type || '').toUpperCase() !== 'NEW_PROFILE') return;
+
+    let candidatePayload;
+    try {
+      candidatePayload = parseSubmissionPayload_(row);
+    } catch (error) {
+      return;
+    }
+
+    const candidate = candidatePayload && candidatePayload.farmer;
+    if (!candidate) return;
+
+    const rowRsbsa = normalizeRsbsaNo_(candidate.rsbsa_no);
+    const rowFirst = normalizeNamePart_(candidate.first_name);
+    const rowLast = normalizeNamePart_(candidate.last_name);
+    const rowPhone = normalizePhone_(candidate.contact_no);
+    const rowAlternatePhone = normalizePhone_(candidate.alternate_contact_no);
+    const rowBarangay = cleanText_(candidate.residence_barangay_code);
+    const existingPhones = [rowPhone, rowAlternatePhone].filter(Boolean);
+    const sharedPhone = incomingPhones.some(function(value) {
+      return existingPhones.indexOf(value) !== -1;
+    });
+
+    let tier = 'NONE';
+    const reasons = [];
+
+    if (rsbsa && rowRsbsa && rsbsa === rowRsbsa) {
+      tier = 'STRONG';
+      reasons.push('Exact RSBSA number match');
+    } else {
+      const nearReason = rsbsa && rowRsbsa
+        ? getRsbsaNearMatchReason_(rsbsa, rowRsbsa)
+        : '';
+
+      if (nearReason) {
+        tier = 'POSSIBLE';
+        reasons.push(nearReason);
+      }
+
+      if (first && last && sharedPhone &&
+          first === rowFirst && last === rowLast) {
+        if (tier !== 'STRONG') tier = 'POSSIBLE';
+        reasons.push('Same normalized name and contact number');
+      }
+
+      if (!rsbsa && !rowRsbsa && sharedPhone && barangay && barangay === rowBarangay) {
+        if (tier !== 'STRONG') tier = 'POSSIBLE';
+        reasons.push('No RSBSA number; same contact number and residence barangay');
+      }
+
+      if (first && last && barangay &&
+          first === rowFirst && last === rowLast && barangay === rowBarangay) {
+        if (tier === 'NONE') tier = 'WEAK';
+        reasons.push('Same normalized name and residence barangay');
+      }
+    }
+
+    if (tier !== 'NONE') {
+      matches.push({
+        submission_id: row.submission_id,
+        tier: tier,
+        reasons: Array.from(new Set(reasons)),
+        farmer: {
+          first_name: candidate.first_name || '',
+          middle_name: candidate.middle_name || '',
+          last_name: candidate.last_name || '',
+          suffix: candidate.suffix || '',
+          rsbsa_no: candidate.rsbsa_no || '',
+          contact_no: candidate.contact_no || '',
+          alternate_contact_no: candidate.alternate_contact_no || '',
+          residence_barangay_code: candidate.residence_barangay_code || ''
+        }
+      });
+    }
+  });
+
+  return matches;
+}
