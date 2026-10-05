@@ -10,7 +10,8 @@
       barangaysByLgu: {}
     },
     map: null,
-    marker: null
+    marker: null,
+    submissionCompleted: false
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -45,6 +46,9 @@
     });
     document.getElementById('profiling-form').addEventListener('submit', submitProfilingForm);
     document.getElementById('preview-submission').addEventListener('click', previewSubmission);
+    document.getElementById('start-new-profile').addEventListener('click', function() {
+      window.location.reload();
+    });
 
     document.getElementById('use-device-location').addEventListener('click', useDeviceLocation);
 
@@ -819,6 +823,11 @@
   async function submitProfilingForm(event) {
     event.preventDefault();
 
+    if (appState.submissionCompleted) {
+      showMessage('This profile has already been submitted. Use Start New Profile to create another submission.', 'is-warning');
+      return;
+    }
+
     const payload = collectPayload();
     if (!validateClientPayload(payload)) return;
 
@@ -843,13 +852,22 @@
         JSON.stringify(result, null, 2);
       document.getElementById('review-summary').classList.remove('is-hidden');
 
-      if (appState.invitationToken) {
-        document.getElementById('submit-profile').disabled = true;
+      appState.submissionCompleted = true;
+      document.getElementById('submit-profile').disabled = true;
+      document.getElementById('preview-submission').disabled = true;
+
+      if (!appState.invitationToken) {
+        document.getElementById('start-new-profile').classList.remove('is-hidden');
       }
     } catch (error) {
       handleServerError(error);
     } finally {
-      if (!appState.invitationToken) setSubmitBusy(false);
+      if (!appState.submissionCompleted) {
+        setSubmitBusy(false);
+      } else {
+        document.getElementById('submit-profile').classList.remove('is-loading');
+        document.getElementById('submit-profile').disabled = true;
+      }
     }
   }
 
