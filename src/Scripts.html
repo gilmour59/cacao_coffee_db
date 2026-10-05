@@ -473,9 +473,11 @@
 
   function handleRsbsaStatusChange(event) {
     const value = event.target.value;
-    document.getElementById('rsbsa-number-panel').classList.toggle('is-hidden', value === 'NOT_REGISTERED');
+    const isUnregistered = value === 'NOT_REGISTERED';
+    document.getElementById('rsbsa-number-panel').classList.toggle('is-hidden', isUnregistered);
+    document.getElementById('rsbsa-confirm-panel').classList.toggle('is-hidden', isUnregistered);
 
-    if (value === 'NOT_REGISTERED') {
+    if (isUnregistered) {
       document.getElementById('rsbsa-no').value = '';
       document.getElementById('rsbsa-confirmed').checked = true;
     } else {
