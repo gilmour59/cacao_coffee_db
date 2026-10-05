@@ -53,9 +53,10 @@
 
             <div class="box form-section">
               <h2 class="title is-5">1. Farmer Information</h2>
+              <p class="required-note"><span class="required-mark" aria-hidden="true">*</span> Required field</p>
 
               <div class="field">
-                <label class="label">RSBSA Registration Status</label>
+                <label class="label">RSBSA Registration Status <span class="required-mark" aria-hidden="true">*</span></label>
                 <div class="control">
                   <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED"> Registered</label><br>
                   <label class="radio"><input type="radio" name="rsbsa_status" value="NOT_REGISTERED"> Not yet registered</label>
@@ -63,19 +64,19 @@
               </div>
 
               <div id="rsbsa-number-panel" class="field is-hidden">
-                <label class="label" for="rsbsa-no">RSBSA Number</label>
+                <label class="label" for="rsbsa-no">RSBSA Number <span class="required-mark" aria-hidden="true">*</span></label>
                 <div class="control"><input id="rsbsa-no" class="input" type="text" autocomplete="off"></div>
               </div>
 
               <div class="columns is-multiline">
-                <div class="column is-3"><label class="label">First Name</label><input id="first-name" class="input" required></div>
+                <div class="column is-3"><label class="label">First Name <span class="required-mark" aria-hidden="true">*</span></label><input id="first-name" class="input" required></div>
                 <div class="column is-3"><label class="label">Middle Name</label><input id="middle-name" class="input"></div>
-                <div class="column is-3"><label class="label">Last Name</label><input id="last-name" class="input" required></div>
+                <div class="column is-3"><label class="label">Last Name <span class="required-mark" aria-hidden="true">*</span></label><input id="last-name" class="input" required></div>
                 <div class="column is-3"><label class="label">Suffix</label><input id="suffix" class="input"></div>
 
-                <div class="column is-3"><label class="label">Sex</label><div class="select is-fullwidth"><select id="sex" required></select></div></div>
-                <div class="column is-3"><label class="label">Marital Status</label><div class="select is-fullwidth"><select id="marital-status" required></select></div></div>
-                <div class="column is-3"><label class="label">Contact Number</label><input id="contact-no" class="input" type="tel" required></div>
+                <div class="column is-3"><label class="label">Sex <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="sex" required></select></div></div>
+                <div class="column is-3"><label class="label">Marital Status <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="marital-status" required></select></div></div>
+                <div class="column is-3"><label class="label">Contact Number <span class="required-mark" aria-hidden="true">*</span></label><input id="contact-no" class="input" type="tel" required></div>
                 <div class="column is-3"><label class="label">Alternate Contact</label><input id="alternate-contact-no" class="input" type="tel"></div>
 
                 <div class="column is-half"><label class="label">Email</label><input id="farmer-email" class="input" type="email"></div>
@@ -84,9 +85,9 @@
 
               <h3 class="title is-6 mt-4">Residence Address</h3>
               <div class="columns is-multiline">
-                <div class="column is-4"><label class="label">Province</label><div class="select is-fullwidth"><select id="res-province" required></select></div></div>
-                <div class="column is-4"><label class="label">Municipality / City</label><div class="select is-fullwidth"><select id="res-lgu" required></select></div></div>
-                <div class="column is-4"><label class="label">Barangay</label><div class="select is-fullwidth"><select id="res-barangay" required></select></div></div>
+                <div class="column is-4"><label class="label">Province <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-province" required></select></div></div>
+                <div class="column is-4"><label class="label">Municipality / City <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-lgu" required></select></div></div>
+                <div class="column is-4"><label class="label">Barangay <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-barangay" required></select></div></div>
                 <div class="column is-3"><label class="label">Sitio / Purok / Zone</label><input id="res-sitio" class="input"></div>
                 <div class="column is-3"><label class="label">Street / Road</label><input id="res-street" class="input"></div>
                 <div class="column is-3"><label class="label">House / Lot / Block</label><input id="res-house" class="input"></div>
@@ -96,7 +97,7 @@
               <div class="field">
                 <label class="checkbox">
                   <input id="rsbsa-confirmed" type="checkbox">
-                  I have reviewed the RSBSA number entered above.
+                  I have reviewed the RSBSA number entered above. <span class="required-mark" aria-hidden="true">*</span>
                 </label>
               </div>
             </div>
@@ -106,36 +107,36 @@
               <input id="existing-farm-id" type="hidden">
               <div class="columns is-multiline">
                 <div class="column is-4"><label class="label">Farm Name / Local ID</label><input id="farm-name" class="input"></div>
-                <div class="column is-4"><label class="label">Tenure</label><div class="select is-fullwidth"><select id="tenure" required></select></div></div>
-                <div class="column is-4"><label class="label">Total Farm Area (ha)</label><input id="total-farm-area" class="input" type="number" min="0" step="0.0001" required></div>
-                <div class="column is-12"><label class="label">Farm Address / Local Description</label><input id="farm-address" class="input" required></div>
+                <div class="column is-4"><label class="label">Tenure <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="tenure" required></select></div></div>
+                <div class="column is-4"><label class="label">Total Farm Area (ha) <span class="required-mark" aria-hidden="true">*</span></label><input id="total-farm-area" class="input" type="number" min="0" step="0.0001" required></div>
+                <div class="column is-12"><label class="label">Farm Address / Local Description <span class="required-mark" aria-hidden="true">*</span></label><input id="farm-address" class="input" required></div>
 
-                <div class="column is-4"><label class="label">Province</label><div class="select is-fullwidth"><select id="farm-province" required></select></div></div>
-                <div class="column is-4"><label class="label">Municipality / City</label><div class="select is-fullwidth"><select id="farm-lgu" required></select></div></div>
-                <div class="column is-4"><label class="label">Barangay</label><div class="select is-fullwidth"><select id="farm-barangay" required></select></div></div>
-                <div class="column is-4"><label class="label">Topography</label><div class="select is-fullwidth"><select id="topography" required></select></div></div>
-                <div class="column is-4"><label class="label">Distance to Road Access (km)</label><input id="road-distance" class="input" type="number" min="0" step="0.01" required></div>
+                <div class="column is-4"><label class="label">Province <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-province" required></select></div></div>
+                <div class="column is-4"><label class="label">Municipality / City <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-lgu" required></select></div></div>
+                <div class="column is-4"><label class="label">Barangay <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-barangay" required></select></div></div>
+                <div class="column is-4"><label class="label">Topography <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="topography" required></select></div></div>
+                <div class="column is-4"><label class="label">Distance to Road Access (km) <span class="required-mark" aria-hidden="true">*</span></label><input id="road-distance" class="input" type="number" min="0" step="0.01" required></div>
                 <div class="column is-4">
-                  <label class="label">Location</label>
+                  <label class="label">Location <span class="required-mark" aria-hidden="true">*</span></label>
                   <button id="use-device-location" class="button is-light is-fullwidth" type="button">Use Device GPS</button>
                 </div>
               </div>
 
               <div id="farm-map" class="mb-3"></div>
               <div class="columns">
-                <div class="column"><label class="label">Latitude</label><input id="latitude" class="input" type="number" step="any" readonly required></div>
-                <div class="column"><label class="label">Longitude</label><input id="longitude" class="input" type="number" step="any" readonly required></div>
+                <div class="column"><label class="label">Latitude <span class="required-mark" aria-hidden="true">*</span></label><input id="latitude" class="input" type="number" step="any" readonly required></div>
+                <div class="column"><label class="label">Longitude <span class="required-mark" aria-hidden="true">*</span></label><input id="longitude" class="input" type="number" step="any" readonly required></div>
                 <input id="location-method" type="hidden" value="MAP_PIN">
               </div>
 
               <div class="field">
-                <label class="label">Source of Water <span class="has-text-grey is-size-7">(select all that apply)</span></label>
+                <label class="label">Source of Water <span class="required-mark" aria-hidden="true">*</span> <span class="has-text-grey is-size-7">(select all that apply)</span></label>
                 <div id="water-source-options" class="checkbox-grid"></div>
               </div>
             </div>
 
             <div class="box form-section">
-              <h2 class="title is-5">3. Coffee / Cacao Profile</h2>
+              <h2 class="title is-5">3. Coffee / Cacao Profile <span class="required-mark" aria-hidden="true">*</span></h2>
               <p class="help mb-4">Tree counts are recorded separately per commodity per farm.</p>
 
               <div id="commodity-sections"></div>
