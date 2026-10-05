@@ -79,9 +79,31 @@ function createPendingSubmission_(payload, context) {
   const flags = Array.from(new Set((change.flags || []).concat(identityFlags)));
 
   return withScriptLock_(function() {
-    const submissionId = generateRecordIdUnlocked_('SUB');
     const now = new Date();
     const submittedBy = getActorEmail_() || context.source || 'PUBLIC';
+    const serializedPayload = serializeSubmissionPayload_(payload);
+
+    const recentDuplicate = findRecentDuplicatePendingSubmissionUnlocked_(
+      serializedPayload,
+      submittedBy,
+      context.source || '',
+      10
+    );
+
+    if (recentDuplicate) {
+      return {
+        ok: true,
+        submission_id: recentDuplicate.submission_id,
+        status: recentDuplicate.status,
+        classification: recentDuplicate.classification,
+        flags: safeJsonParseArray_(recentDuplicate.flag_reasons_json),
+        identity_review_required: getIdentityReviewsForSubmission_(recentDuplicate.submission_id)
+          .some(function(review) { return String(review.review_status || '').toUpperCase() === 'PENDING'; }),
+        duplicate_submission_reused: true
+      };
+    }
+
+    const submissionId = generateRecordIdUnlocked_('SUB');
 
     const row = {
       submission_id: submissionId,
@@ -90,7 +112,7 @@ function createPendingSubmission_(payload, context) {
       submission_type: type,
       reference_year: year,
       status: 'PENDING',
-      payload_json: serializeSubmissionPayload_(payload),
+      payload_json: serializedPayload,
       classification: change.classification,
       flag_reasons_json: safeJsonStringify_(flags),
       comparison_json: safeJsonStringify_(change.comparison || {}),
@@ -139,6 +161,42 @@ function createPendingSubmission_(payload, context) {
       identity_review_required: identityReviews.length > 0
     };
   }, 15000);
+}
+
+function findRecentDuplicatePendingSubmissionUnlocked_(serializedPayload, submittedBy, source, windowMinutes) {
+  const cutoff = Date.now() - (Number(windowMinutes || 10) * 60 * 1000);
+  const normalizedSubmitter = String(submittedBy || '').trim().toUpperCase();
+  const normalizedSource = String(source || '').trim().toUpperCase();
+
+  const rows = getRowsAsObjects_('Submissions');
+
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const row = rows[i];
+    if (String(row.status || '').toUpperCase() !== 'PENDING') continue;
+    if (String(row.submitted_by || '').trim().toUpperCase() !== normalizedSubmitter) continue;
+    if (String(row.payload_json || '') !== serializedPayload) continue;
+
+    const submittedAt = row.submitted_at instanceof Date
+      ? row.submitted_at.getTime()
+      : new Date(row.submitted_at).getTime();
+
+    if (!Number.isFinite(submittedAt) || submittedAt < cutoff) continue;
+
+    // Source is not currently persisted separately, so submitter + identical payload
+    // + short time window is the conservative V1 duplicate guard.
+    return row;
+  }
+
+  return null;
+}
+
+function safeJsonParseArray_(value) {
+  try {
+    const parsed = JSON.parse(String(value || '[]'));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
 }
 
 function validateSubmissionPayload_(payload) {
