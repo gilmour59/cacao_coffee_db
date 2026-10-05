@@ -57,18 +57,10 @@
               <div class="field">
                 <label class="label">RSBSA Registration Status</label>
                 <div class="control">
-                  <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED_ID_AVAILABLE"> Registered — ID available</label><br>
-                  <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED_NO_ID"> Registered — ID not available</label><br>
+                  <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED_ID_AVAILABLE"> Registered — RSBSA number available</label><br>
+                  <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED_NO_ID"> Registered — card not available</label><br>
                   <label class="radio"><input type="radio" name="rsbsa_status" value="NOT_REGISTERED"> Not yet registered</label>
                 </div>
-              </div>
-
-              <div id="rsbsa-scan-panel" class="field is-hidden">
-                <label class="label">RSBSA ID image</label>
-                <div class="control">
-                  <input id="rsbsa-image" class="input" type="file" accept="image/*" capture="environment">
-                </div>
-                <p class="help">Processed locally in your browser for OCR. The image is not uploaded or stored.</p>
               </div>
 
               <div id="rsbsa-number-panel" class="field is-hidden">
@@ -105,7 +97,7 @@
               <div class="field">
                 <label class="checkbox">
                   <input id="rsbsa-confirmed" type="checkbox">
-                  I have reviewed the RSBSA information entered or extracted above.
+                  I have reviewed the RSBSA number entered above.
                 </label>
               </div>
             </div>
@@ -239,7 +231,6 @@
     window.__INITIAL_INVITATION_TOKEN__ = <?!= JSON.stringify(initialInvitationToken) ?>;
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
   <?!= include('Scripts'); ?>
 </body>
 </html>
