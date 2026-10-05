@@ -13,7 +13,7 @@ The key rule is:
   "submission_type": "NEW_PROFILE",
   "reference_year": 2026,
   "farmer": {
-    "rsbsa_registration_status": "REGISTERED_ID_AVAILABLE",
+    "rsbsa_registration_status": "REGISTERED",
     "rsbsa_no": "example",
     "rsbsa_capture_method": "MANUAL",
     "rsbsa_info_confirmed": true,
