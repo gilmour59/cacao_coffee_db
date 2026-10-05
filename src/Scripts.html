@@ -10,12 +10,7 @@
       barangaysByLgu: {}
     },
     map: null,
-    marker: null,
-    rsbsa: {
-      sourceImageUrl: null,
-      ocrText: '',
-      ocrUsed: false
-    }
+    marker: null
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -48,8 +43,6 @@
     document.querySelectorAll('input[name="rsbsa_status"]').forEach(function(input) {
       input.addEventListener('change', handleRsbsaStatusChange);
     });
-
-    document.getElementById('rsbsa-image').addEventListener('change', handleRsbsaImage);
     document.getElementById('profiling-form').addEventListener('submit', submitProfilingForm);
     document.getElementById('preview-submission').addEventListener('click', previewSubmission);
 
@@ -480,60 +473,15 @@
 
   function handleRsbsaStatusChange(event) {
     const value = event.target.value;
-    document.getElementById('rsbsa-scan-panel').classList.toggle('is-hidden', value !== 'REGISTERED_ID_AVAILABLE');
     document.getElementById('rsbsa-number-panel').classList.toggle('is-hidden', value === 'NOT_REGISTERED');
 
     if (value === 'NOT_REGISTERED') {
       document.getElementById('rsbsa-no').value = '';
       document.getElementById('rsbsa-confirmed').checked = true;
-      appState.rsbsa.ocrUsed = false;
-      releaseRsbsaImage();
     } else {
       document.getElementById('rsbsa-confirmed').checked = false;
     }
   }
-
-  async function handleRsbsaImage(event) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-
-    releaseRsbsaImage();
-    appState.rsbsa.sourceImageUrl = URL.createObjectURL(file);
-    appState.rsbsa.ocrUsed = false;
-
-    showMessage('Reading the RSBSA ID locally. Please wait…', 'is-info');
-
-    try {
-      const result = await Tesseract.recognize(file, 'eng');
-      appState.rsbsa.ocrText = result.data.text || '';
-
-      const candidate = extractRsbsaCandidate(appState.rsbsa.ocrText);
-      if (candidate) {
-        document.getElementById('rsbsa-no').value = candidate;
-        appState.rsbsa.ocrUsed = true;
-        showMessage('RSBSA text detected. Please verify or correct the number before submission.', 'is-success');
-      } else {
-        showMessage('The RSBSA number was not detected reliably. Please enter it manually.', 'is-warning');
-      }
-    } catch (error) {
-      showMessage('OCR failed. You can still enter the RSBSA number manually.', 'is-warning');
-    } finally {
-      releaseRsbsaImage();
-    }
-  }
-
-  function extractRsbsaCandidate(text) {
-    const normalized = String(text || '').toUpperCase().replace(/[–—]/g, '-');
-    const match = normalized.match(/\b\d{2}[\s-]*\d{2}[\s-]*\d{2}[\s-]*\d{4,8}\b/);
-    if (!match) return '';
-    return match[0].replace(/\s+/g, '-').replace(/-+/g, '-');
-  }
-
-  function releaseRsbsaImage() {
-    if (appState.rsbsa.sourceImageUrl) {
-      URL.revokeObjectURL(appState.rsbsa.sourceImageUrl);
-      appState.rsbsa.sourceImageUrl = null;
-    }
   }
 
   function initMap() {
@@ -670,7 +618,7 @@
         rsbsa_no: cleanValue('rsbsa-no'),
         rsbsa_capture_method: status === 'NOT_REGISTERED'
           ? 'NOT_APPLICABLE'
-          : (appState.rsbsa.ocrUsed ? 'ID_OCR' : 'MANUAL'),
+          : 'MANUAL',
         rsbsa_info_confirmed: document.getElementById('rsbsa-confirmed').checked,
         first_name: cleanValue('first-name'),
         middle_name: cleanValue('middle-name'),
