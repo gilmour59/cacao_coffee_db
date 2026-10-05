@@ -1069,6 +1069,7 @@
     }
 
     document.getElementById('validator-summary').innerHTML = html;
+    bindDuplicateCandidateActions();
     renderIdentityReviews(review.identity_reviews || []);
     document.getElementById('validator-remarks').value = '';
     const duplicateRef = document.getElementById('duplicate-reference');
@@ -1135,7 +1136,7 @@
             reviewLine('Contact', submittedFarmer.contact_no) +
             reviewLine('Barangay Code', submittedFarmer.residence_barangay_code) +
           '</div>' +
-          '<div class="duplicate-person">' +
+          '<div class="duplicate-person duplicate-candidate-card" data-candidate-submission-id="' + escapeAttr(match.submission_id || '') + '">' +
             '<span class="review-kicker">Other Pending Submission</span>' +
             '<strong>' + escapeHtml(fullName(candidate) || '—') + '</strong>' +
             reviewLine('Submission', match.submission_id) +
@@ -1144,6 +1145,13 @@
             reviewLine('Contact', candidate.contact_no) +
             reviewLine('Barangay Code', candidate.residence_barangay_code) +
             reviewLine('Reason', (match.reasons || []).join('; ')) +
+            '<div class="candidate-review-actions">' +
+              '<input class="input candidate-spam-reason" type="text" placeholder="Reason for spam/invalid (required only for Spam)">' +
+              '<div class="buttons are-small mt-2">' +
+                '<button type="button" class="button is-light action-secondary candidate-mark-duplicate">Mark this as Duplicate</button>' +
+                '<button type="button" class="button is-danger is-light candidate-mark-spam">Mark as Spam / Invalid</button>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
         '</div>';
     });
@@ -1155,6 +1163,82 @@
 
     html += '</section>';
     return html;
+  }
+
+  function bindDuplicateCandidateActions() {
+    document.querySelectorAll('.duplicate-candidate-card').forEach(function(card) {
+      const candidateSubmissionId = String(card.dataset.candidateSubmissionId || '').trim();
+      if (!candidateSubmissionId) return;
+
+      const duplicateButton = card.querySelector('.candidate-mark-duplicate');
+      const spamButton = card.querySelector('.candidate-mark-spam');
+      const spamReason = card.querySelector('.candidate-spam-reason');
+
+      if (duplicateButton) {
+        duplicateButton.addEventListener('click', async function() {
+          if (!appState.selectedSubmissionId) return;
+
+          const confirmed = window.confirm(
+            'Mark ' + candidateSubmissionId +
+            ' as a duplicate of the submission currently being reviewed (' +
+            appState.selectedSubmissionId + ')?'
+          );
+          if (!confirmed) return;
+
+          duplicateButton.classList.add('is-loading');
+          try {
+            await serverCall(
+              'voidSubmission',
+              candidateSubmissionId,
+              'DUPLICATE_SUBMISSION',
+              appState.selectedSubmissionId,
+              'Marked as duplicate while reference-checking ' + appState.selectedSubmissionId + '.'
+            );
+            showMessage(candidateSubmissionId + ' was marked as duplicate.', 'is-success');
+            await openSubmissionReview(appState.selectedSubmissionId);
+            await loadValidatorQueue();
+          } catch (error) {
+            handleServerError(error);
+          } finally {
+            duplicateButton.classList.remove('is-loading');
+          }
+        });
+      }
+
+      if (spamButton) {
+        spamButton.addEventListener('click', async function() {
+          const reason = spamReason ? spamReason.value.trim() : '';
+          if (!reason) {
+            showMessage('Enter the spam/invalid reason on the candidate card first.', 'is-warning');
+            if (spamReason) spamReason.focus();
+            return;
+          }
+
+          const confirmed = window.confirm(
+            'Mark ' + candidateSubmissionId + ' as spam/invalid? This keeps the record for audit but removes it from the active queue.'
+          );
+          if (!confirmed) return;
+
+          spamButton.classList.add('is-loading');
+          try {
+            await serverCall(
+              'voidSubmission',
+              candidateSubmissionId,
+              'SPAM_INVALID',
+              '',
+              reason
+            );
+            showMessage(candidateSubmissionId + ' was marked as spam/invalid.', 'is-success');
+            await openSubmissionReview(appState.selectedSubmissionId);
+            await loadValidatorQueue();
+          } catch (error) {
+            handleServerError(error);
+          } finally {
+            spamButton.classList.remove('is-loading');
+          }
+        });
+      }
+    });
   }
 
   function renderHumanReviewHtml(payload, options) {
