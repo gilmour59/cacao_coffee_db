@@ -19,6 +19,8 @@ This document records the decisions confirmed from the HVCP requirements questio
 - Returned submissions may either reuse the same secure link or receive a new correction link.
 
 ### RSBSA identity safeguards
+- RSBSA registration status is simplified to Registered or Not yet registered.
+- Registered farmers enter their RSBSA number manually; card availability is not tracked in V1.
 - V1 uses manual RSBSA number entry only; RSBSA ID image capture and OCR are not included.
 - Exact RSBSA matches are treated as a strong duplicate signal.
 - Conservative near-match detection flags likely one-character entry errors or adjacent character/digit transpositions for Validator review.
