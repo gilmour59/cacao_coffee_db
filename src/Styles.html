@@ -13,6 +13,13 @@
     --green-800: #1f5138;
     --green-700: #2f6849;
     --green-100: #e9f3ec;
+    --green-050: #f3f8f4;
+    --amber-700: #7a5700;
+    --amber-100: #fff3cd;
+    --red-700: #8f2d24;
+    --red-100: #fdecea;
+    --blue-700: #24536d;
+    --blue-100: #eaf4f8;
     --coffee: #76523d;
     --cacao: #9a5b3c;
     --focus: rgba(47, 104, 73, .18);
@@ -298,8 +305,102 @@
     color: var(--ink) !important;
   }
 
+  code {
+    display: inline-block;
+    padding: .14rem .38rem;
+    border: 1px solid #cfe0d3;
+    border-radius: 6px;
+    background: var(--green-050) !important;
+    color: var(--green-900) !important;
+    font-size: .88em;
+    font-weight: 750;
+  }
+
+  .tag,
+  .badge,
+  .status-badge {
+    border: 1px solid #cfe0d3 !important;
+    background: var(--green-100) !important;
+    color: var(--green-900) !important;
+    font-weight: 750;
+  }
+
+  .button.is-link {
+    background: var(--green-100) !important;
+    border: 1px solid #b9d2c0 !important;
+    color: var(--green-900) !important;
+  }
+
+  .button.is-link:hover {
+    background: #dcecdf !important;
+    color: var(--green-900) !important;
+  }
+
+  .button.is-success {
+    background: var(--green-800) !important;
+    border-color: var(--green-800) !important;
+    color: #fff !important;
+  }
+
+  .button.is-success:hover {
+    background: var(--green-900) !important;
+    border-color: var(--green-900) !important;
+    color: #fff !important;
+  }
+
+  .button.is-warning {
+    background: var(--amber-100) !important;
+    border: 1px solid #e6cf8b !important;
+    color: var(--amber-700) !important;
+  }
+
+  .button.is-warning:hover {
+    background: #f9e7ae !important;
+    color: #5e4300 !important;
+  }
+
+  .button.is-danger,
+  .button.is-danger.is-light {
+    background: var(--red-100) !important;
+    border: 1px solid #efc4bf !important;
+    color: var(--red-700) !important;
+  }
+
+  .button.is-danger:hover,
+  .button.is-danger.is-light:hover {
+    background: #f8d8d4 !important;
+    color: #74231c !important;
+  }
+
   .notification {
     border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+    background: var(--green-050) !important;
+    color: var(--ink) !important;
+  }
+
+  .notification.is-info {
+    border-color: #c5dce7 !important;
+    background: var(--blue-100) !important;
+    color: var(--blue-700) !important;
+  }
+
+  .notification.is-success {
+    border-color: #b9d2c0 !important;
+    background: var(--green-100) !important;
+    color: var(--green-900) !important;
+  }
+
+  .notification.is-warning {
+    border-color: #e6cf8b !important;
+    background: var(--amber-100) !important;
+    color: var(--amber-700) !important;
+  }
+
+  .notification.is-danger {
+    border-color: #efc4bf !important;
+    background: var(--red-100) !important;
+    color: var(--red-700) !important;
   }
 
   #farm-map {
@@ -556,12 +657,13 @@
 
   .validator-flag {
     display: inline-block;
+    border: 1px solid #e6cf8b;
     border-radius: 999px;
-    background: #fff4d6;
-    color: #765900;
+    background: var(--amber-100) !important;
+    color: var(--amber-700) !important;
     padding: .3rem .6rem;
     font-size: .75rem;
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .identity-review-card {
@@ -582,11 +684,16 @@
   }
 
   .validator-overview,
-  .validator-overview code,
   .review-section,
   .review-list-item,
   .identity-review-card {
     color: var(--ink) !important;
+  }
+
+  .validator-overview code {
+    border-color: #b9d2c0 !important;
+    background: var(--green-100) !important;
+    color: var(--green-900) !important;
   }
 
   .review-kicker,
