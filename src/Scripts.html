@@ -562,7 +562,11 @@
   }
 
   function prefillFarmer(farmer) {
-    setRadioValue('rsbsa_status', farmer.rsbsa_registration_status || '');
+    const rawRsbsaStatus = String(farmer.rsbsa_registration_status || '').toUpperCase();
+    const uiRsbsaStatus = rawRsbsaStatus === 'NOT_REGISTERED'
+      ? 'NOT_REGISTERED'
+      : (rawRsbsaStatus ? 'REGISTERED' : '');
+    setRadioValue('rsbsa_status', uiRsbsaStatus);
     const selected = document.querySelector('input[name="rsbsa_status"]:checked');
     if (selected) handleRsbsaStatusChange({ target: selected });
 
