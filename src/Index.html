@@ -216,11 +216,20 @@
             <hr>
             <div class="field">
               <label class="label" for="validator-remarks">Validator Remarks</label>
-              <textarea id="validator-remarks" class="textarea" rows="3"></textarea>
+              <textarea id="validator-remarks" class="textarea" rows="3" placeholder="Required for Return and Spam/Invalid. Optional for Approve or Duplicate."></textarea>
             </div>
-            <div class="buttons">
+
+            <div class="field">
+              <label class="label" for="duplicate-reference">Duplicate Reference</label>
+              <input id="duplicate-reference" class="input" type="text" placeholder="Submission ID or Farmer ID, e.g. SUB-2026-000001 or FMR-2026-000001">
+              <p class="help">Required only when marking the submission as a duplicate.</p>
+            </div>
+
+            <div class="buttons validator-actions">
               <button id="approve-submission" class="button is-success" type="button">Approve</button>
               <button id="return-submission" class="button is-warning" type="button">Return for Correction</button>
+              <button id="duplicate-submission" class="button is-light action-secondary" type="button">Mark as Duplicate</button>
+              <button id="spam-submission" class="button is-danger is-light" type="button">Mark as Spam / Invalid</button>
             </div>
           </div>
         </section>
