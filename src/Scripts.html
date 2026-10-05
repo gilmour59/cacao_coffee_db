@@ -1,46 +1,213 @@
 <script>
   const appState = {
     bootstrap: null,
+    invitationToken: window.__INITIAL_INVITATION_TOKEN__ || '',
+    invitationContext: null,
+    currentMode: 'intake',
+    selectedSubmissionId: '',
     locations: {
       lgusByProvince: {},
       barangaysByLgu: {}
     },
-    rsbsa: {
-      sourceImageUrl: null,
-      ocrText: ''
-    }
+    map: null,
+    marker: null,
+    submissionCompleted: false,
+    toastTimer: null
   };
 
   document.addEventListener('DOMContentLoaded', function () {
-    bindRsbsaStatus();
-    bindRsbsaImage();
+    bindStaticEvents();
 
-    google.script.run
-      .withSuccessHandler(handleBootstrapSuccess)
-      .withFailureHandler(handleServerError)
-      .getBootstrapData();
+    serverCall('getBootstrapData')
+      .then(handleBootstrapSuccess)
+      .catch(handleServerError);
   });
 
+  function serverCall(functionName) {
+    const args = Array.prototype.slice.call(arguments, 1);
+
+    return new Promise(function(resolve, reject) {
+      const runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject);
+
+      runner[functionName].apply(runner, args);
+    });
+  }
+
+  function bindStaticEvents() {
+    document.querySelectorAll('#mode-tabs a[data-mode]').forEach(function(link) {
+      link.addEventListener('click', function() {
+        switchMode(link.dataset.mode);
+      });
+    });
+
+    document.querySelectorAll('input[name="rsbsa_status"]').forEach(function(input) {
+      input.addEventListener('change', handleRsbsaStatusChange);
+    });
+    document.getElementById('profiling-form').addEventListener('submit', submitProfilingForm);
+    document.getElementById('preview-submission').addEventListener('click', previewSubmission);
+    document.getElementById('start-new-profile').addEventListener('click', resetForNewProfile);
+
+    document.getElementById('use-device-location').addEventListener('click', useDeviceLocation);
+
+    document.getElementById('add-facility').addEventListener('click', function() {
+      addFacilityRow();
+    });
+    document.getElementById('add-intervention').addEventListener('click', function() {
+      addInterventionRow();
+    });
+    document.getElementById('add-need').addEventListener('click', function() {
+      addNeedRow();
+    });
+
+    document.getElementById('refresh-validator').addEventListener('click', loadValidatorQueue);
+    document.getElementById('approve-submission').addEventListener('click', approveSelectedSubmission);
+    document.getElementById('return-submission').addEventListener('click', returnSelectedSubmission);
+    document.getElementById('duplicate-submission').addEventListener('click', voidSelectedSubmissionAsDuplicate);
+    document.getElementById('spam-submission').addEventListener('click', voidSelectedSubmissionAsSpam);
+
+    bindLocationCascade('res');
+    bindLocationCascade('farm');
+  }
+
   function handleBootstrapSuccess(data) {
-    appState.bootstrap = data;
-    buildLocationIndexes(data.locations || {});
+    appState.bootstrap = data || {};
+    buildLocationIndexes((data && data.locations) || {});
+    populateReferenceControls();
+    renderCommoditySections();
+    renderWaterSources();
+    initMap();
+    configureStaffUi();
+
+    document.getElementById('reference-year').value =
+      (data.app && data.app.currentYear) || new Date().getFullYear();
 
     document.getElementById('loading-state').classList.add('is-hidden');
-    document.getElementById('farmer-step').classList.remove('is-hidden');
+    document.getElementById('app-content').classList.remove('is-hidden');
+
+    if (appState.map) {
+      setTimeout(function() { appState.map.invalidateSize(); }, 50);
+    }
+
+    if (appState.invitationToken) {
+      loadInvitationContext(appState.invitationToken);
+    }
+  }
+
+  function configureStaffUi() {
+    const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+    if (!staff) return;
+
+    document.getElementById('staff-badge').classList.remove('is-hidden');
+    document.getElementById('staff-name').textContent = staff.full_name || staff.email || 'Authorized staff';
+    document.getElementById('staff-role').textContent = staff.role || '';
+
+    if (staff.role === 'ADMIN' || staff.role === 'VALIDATOR') {
+      document.getElementById('validator-tab').classList.remove('is-hidden');
+    }
+  }
+
+  function switchMode(mode) {
+    if (mode === 'validator') {
+      const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+      if (!staff || (staff.role !== 'ADMIN' && staff.role !== 'VALIDATOR')) {
+        showMessage('Validator access requires an authorized Validator or Data Administrator.', 'is-warning');
+        return;
+      }
+    }
+
+    appState.currentMode = mode;
+    document.getElementById('intake-view').classList.toggle('is-hidden', mode !== 'intake');
+    document.getElementById('validator-view').classList.toggle('is-hidden', mode !== 'validator');
+    document.getElementById('intake-tab').classList.toggle('is-active', mode === 'intake');
+    document.getElementById('validator-tab').classList.toggle('is-active', mode === 'validator');
+
+    if (mode === 'validator') {
+      loadValidatorQueue();
+    } else if (appState.map) {
+      setTimeout(function() { appState.map.invalidateSize(); }, 50);
+    }
+  }
+
+  function getRefs(name) {
+    const refs = appState.bootstrap && appState.bootstrap.references;
+    return (refs && refs[name]) || [];
+  }
+
+  function populateReferenceControls() {
+    populateSelect(
+      document.getElementById('sex'),
+      getRefs('sex'),
+      'code',
+      'label',
+      'Select sex'
+    );
+    populateSelect(
+      document.getElementById('marital-status'),
+      getRefs('maritalStatuses'),
+      'marital_status_code',
+      'marital_status_name',
+      'Select marital status'
+    );
+    populateSelect(
+      document.getElementById('tenure'),
+      getRefs('tenure'),
+      'tenure_code',
+      'tenure_name',
+      'Select tenure'
+    );
+    populateSelect(
+      document.getElementById('topography'),
+      getRefs('topographies'),
+      'topography_code',
+      'topography_name',
+      'Select topography'
+    );
+
+    ['res-province', 'farm-province'].forEach(function(id) {
+      populateSelect(
+        document.getElementById(id),
+        (appState.bootstrap.locations && appState.bootstrap.locations.provinces) || [],
+        'province_code',
+        'province_name',
+        'Select province'
+      );
+    });
+  }
+
+  function populateSelect(select, rows, valueField, labelField, placeholder) {
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = '';
+
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = placeholder || 'Select';
+    select.appendChild(blank);
+
+    (rows || []).forEach(function(row) {
+      const option = document.createElement('option');
+      option.value = row[valueField] || '';
+      option.textContent = row[labelField] || row[valueField] || '';
+      select.appendChild(option);
+    });
+
+    if (current) select.value = current;
   }
 
   function buildLocationIndexes(locations) {
     const lgus = locations.lgus || [];
     const barangays = locations.barangays || [];
 
-    appState.locations.lgusByProvince = lgus.reduce(function (map, lgu) {
+    appState.locations.lgusByProvince = lgus.reduce(function(map, lgu) {
       const key = String(lgu.province_code || '');
       if (!map[key]) map[key] = [];
       map[key].push(lgu);
       return map;
     }, {});
 
-    appState.locations.barangaysByLgu = barangays.reduce(function (map, barangay) {
+    appState.locations.barangaysByLgu = barangays.reduce(function(map, barangay) {
       const key = String(barangay.lgu_code || '');
       if (!map[key]) map[key] = [];
       map[key].push(barangay);
@@ -48,92 +215,1570 @@
     }, {});
   }
 
-  function bindRsbsaStatus() {
-    document.querySelectorAll('input[name="rsbsa_status"]').forEach(function (input) {
-      input.addEventListener('change', function () {
-        const value = input.value;
-        const scanPanel = document.getElementById('rsbsa-scan-panel');
-        const numberPanel = document.getElementById('rsbsa-number-panel');
-        const confirmed = document.getElementById('rsbsa-confirmed');
+  function bindLocationCascade(prefix) {
+    const province = document.getElementById(prefix + '-province');
+    const lgu = document.getElementById(prefix + '-lgu');
+    const barangay = document.getElementById(prefix + '-barangay');
 
-        scanPanel.classList.toggle('is-hidden', value !== 'REGISTERED_ID_AVAILABLE');
-        numberPanel.classList.toggle('is-hidden', value === 'NOT_REGISTERED');
+    province.addEventListener('change', function() {
+      populateSelect(
+        lgu,
+        appState.locations.lgusByProvince[province.value] || [],
+        'lgu_code',
+        'lgu_name',
+        'Select municipality / city'
+      );
+      populateSelect(barangay, [], 'barangay_code', 'barangay_name', 'Select barangay');
+    });
 
-        if (value === 'NOT_REGISTERED') {
-          document.getElementById('rsbsa-no').value = '';
-          confirmed.checked = true;
-          releaseRsbsaImage();
-        } else {
-          confirmed.checked = false;
+    lgu.addEventListener('change', function() {
+      populateSelect(
+        barangay,
+        appState.locations.barangaysByLgu[lgu.value] || [],
+        'barangay_code',
+        'barangay_name',
+        'Select barangay'
+      );
+    });
+  }
+
+  function setLocationCascade(prefix, provinceCode, lguCode, barangayCode) {
+    const province = document.getElementById(prefix + '-province');
+    const lgu = document.getElementById(prefix + '-lgu');
+    const barangay = document.getElementById(prefix + '-barangay');
+
+    province.value = provinceCode || '';
+    populateSelect(
+      lgu,
+      appState.locations.lgusByProvince[province.value] || [],
+      'lgu_code',
+      'lgu_name',
+      'Select municipality / city'
+    );
+    lgu.value = lguCode || '';
+
+    populateSelect(
+      barangay,
+      appState.locations.barangaysByLgu[lgu.value] || [],
+      'barangay_code',
+      'barangay_name',
+      'Select barangay'
+    );
+    barangay.value = barangayCode || '';
+  }
+
+  function renderWaterSources() {
+    const target = document.getElementById('water-source-options');
+    target.innerHTML = '';
+
+    getRefs('waterSources').forEach(function(source) {
+      const label = document.createElement('label');
+      label.className = 'checkbox-card';
+      label.innerHTML =
+        '<input type="checkbox" class="water-source-checkbox" value="' +
+        escapeAttr(source.water_source_code) + '"> ' +
+        '<span>' + escapeHtml(source.water_source_name) + '</span>';
+      target.appendChild(label);
+    });
+  }
+
+  function renderCommoditySections() {
+    const target = document.getElementById('commodity-sections');
+    target.innerHTML = '';
+
+    [
+      { code: 'COFFEE', label: 'Coffee' },
+      { code: 'CACAO', label: 'Cacao' }
+    ].forEach(function(commodity) {
+      const key = commodity.code.toLowerCase();
+      const card = document.createElement('div');
+      card.className = 'commodity-card is-disabled';
+      card.dataset.commodity = commodity.code;
+
+      card.innerHTML =
+        '<label class="checkbox has-text-weight-semibold">' +
+          '<input class="commodity-toggle" type="checkbox" value="' + commodity.code + '"> ' +
+          commodity.label +
+        '</label>' +
+        '<div class="commodity-body is-hidden mt-4">' +
+          '<div class="columns is-multiline">' +
+            numberFieldHtml(key + '-new', 'Newly Planted (<1 year)') +
+            numberFieldHtml(key + '-nonbearing', 'Non-bearing') +
+            numberFieldHtml(key + '-bearing', 'Bearing') +
+            numberFieldHtml(key + '-mortality', 'Mortality') +
+            decimalFieldHtml(key + '-area', 'Planted Area (ha)') +
+          '</div>' +
+          '<div class="level is-mobile mt-4">' +
+            '<div class="level-left"><h4 class="title is-6 mb-0">Varieties / Plantings</h4></div>' +
+            '<div class="level-right"><button type="button" class="button is-small is-light add-planting">Add Variety</button></div>' +
+          '</div>' +
+          '<div class="planting-rows repeatable-list"></div>' +
+          '<div class="level is-mobile mt-5">' +
+            '<div class="level-left"><h4 class="title is-6 mb-0">Production per Harvest</h4></div>' +
+            '<div class="level-right"><button type="button" class="button is-small is-light add-production">Add Harvest</button></div>' +
+          '</div>' +
+          '<div class="production-rows repeatable-list"></div>' +
+        '</div>';
+
+      target.appendChild(card);
+
+      const toggle = card.querySelector('.commodity-toggle');
+      const body = card.querySelector('.commodity-body');
+
+      toggle.addEventListener('change', function() {
+        card.classList.toggle('is-disabled', !toggle.checked);
+        body.classList.toggle('is-hidden', !toggle.checked);
+
+        if (toggle.checked && card.querySelectorAll('.planting-row').length === 0) {
+          addPlantingRow(card, commodity.code);
         }
+      });
+
+      card.querySelector('.add-planting').addEventListener('click', function() {
+        addPlantingRow(card, commodity.code);
+      });
+
+      card.querySelector('.add-production').addEventListener('click', function() {
+        addProductionRow(card);
       });
     });
   }
 
-  function bindRsbsaImage() {
-    const input = document.getElementById('rsbsa-image');
+  function numberFieldHtml(id, label) {
+    return '<div class="column is-4-mobile is-2-desktop">' +
+      '<label class="label" for="' + id + '">' + label + '</label>' +
+      '<input id="' + id + '" class="input crop-number" type="number" min="0" step="1" value="0">' +
+      '</div>';
+  }
 
-    input.addEventListener('change', async function (event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
+  function decimalFieldHtml(id, label) {
+    return '<div class="column is-4-mobile is-4-desktop">' +
+      '<label class="label" for="' + id + '">' + label + '</label>' +
+      '<input id="' + id + '" class="input crop-area" type="number" min="0" step="0.0001" value="0">' +
+      '</div>';
+  }
 
-      releaseRsbsaImage();
-      appState.rsbsa.sourceImageUrl = URL.createObjectURL(file);
+  function addPlantingRow(card, commodityCode) {
+    const row = document.createElement('div');
+    row.className = 'repeatable-row planting-row';
 
-      showMessage('Reading the RSBSA ID locally. Please wait…', 'is-info');
+    const varieties = getRefs('varieties').filter(function(v) {
+      return String(v.commodity_code || '').toUpperCase() === commodityCode;
+    });
 
-      try {
-        // Initial implementation: OCR locally in the browser.
-        // Image preprocessing and RSBSA-specific parsing will be tuned
-        // after testing against a privacy-safe sample of the actual ID layout.
-        const result = await Tesseract.recognize(file, 'eng');
-        appState.rsbsa.ocrText = result.data.text || '';
+    row.innerHTML =
+      '<div class="columns is-multiline is-vcentered">' +
+        '<div class="column is-5"><label class="label">Variety <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select class="planting-variety"></select></div></div>' +
+        '<div class="column is-4"><label class="label">Year Planted <span class="required-mark" aria-hidden="true">*</span></label><input class="input planting-year" type="number" min="1900" max="2200"></div>' +
+        '<div class="column is-3 has-text-right"><button type="button" class="button is-small is-danger is-light remove-row">Remove</button></div>' +
+      '</div>';
 
-        const rsbsaCandidate = extractRsbsaCandidate(appState.rsbsa.ocrText);
-        if (rsbsaCandidate) {
-          document.getElementById('rsbsa-no').value = rsbsaCandidate;
-          showMessage('RSBSA text detected. Please verify/correct the information before continuing.', 'is-success');
-        } else {
-          showMessage('The RSBSA number was not detected reliably. Please enter it manually.', 'is-warning');
+    populateSelect(row.querySelector('.planting-variety'), varieties, 'variety_code', 'variety_name', 'Select variety');
+    row.querySelector('.remove-row').addEventListener('click', function() { row.remove(); });
+    card.querySelector('.planting-rows').appendChild(row);
+  }
+
+  function addProductionRow(card) {
+    const row = document.createElement('div');
+    row.className = 'repeatable-row production-row';
+    const year = document.getElementById('reference-year').value || new Date().getFullYear();
+
+    row.innerHTML =
+      '<div class="columns is-multiline is-vcentered">' +
+        '<div class="column is-3"><label class="label">Harvest Date</label><input class="input production-date" type="date"></div>' +
+        '<div class="column is-2"><label class="label">Year</label><input class="input production-year" type="number" value="' + escapeAttr(year) + '"></div>' +
+        '<div class="column is-3"><label class="label">Volume (kg)</label><input class="input production-volume" type="number" min="0" step="0.01"></div>' +
+        '<div class="column is-3"><label class="label">Price / kg</label><input class="input production-price" type="number" min="0" step="0.01"></div>' +
+        '<div class="column is-1 has-text-right"><button type="button" class="button is-small is-danger is-light remove-row">×</button></div>' +
+      '</div>';
+
+    row.querySelector('.remove-row').addEventListener('click', function() { row.remove(); });
+    card.querySelector('.production-rows').appendChild(row);
+  }
+
+  function addFacilityRow() {
+    const row = document.createElement('div');
+    row.className = 'repeatable-row facility-row';
+
+    row.innerHTML =
+      '<div class="columns is-multiline is-vcentered">' +
+        '<div class="column is-4"><label class="label">Facility / Equipment</label><input class="input facility-description"></div>' +
+        '<div class="column is-2"><label class="label">Quantity</label><input class="input facility-quantity" type="number" min="0" step="1"></div>' +
+        '<div class="column is-3"><label class="label">Capacity</label><input class="input facility-capacity"></div>' +
+        '<div class="column is-3"><label class="label">Model / Description</label><input class="input facility-model"></div>' +
+        '<div class="column is-4"><label class="label">Condition / Status</label><input class="input facility-condition"></div>' +
+        '<div class="column is-5"><label class="label">Utilization</label><div class="select is-fullwidth"><select class="facility-utilization"></select></div></div>' +
+        '<div class="column is-3 has-text-right"><button type="button" class="button is-small is-danger is-light remove-row">Remove</button></div>' +
+      '</div>';
+
+    populateSelect(
+      row.querySelector('.facility-utilization'),
+      getRefs('utilizationStatuses'),
+      'code',
+      'label',
+      'Select utilization'
+    );
+    row.querySelector('.remove-row').addEventListener('click', function() { row.remove(); });
+    document.getElementById('facility-rows').appendChild(row);
+  }
+
+  function addInterventionRow() {
+    const row = document.createElement('div');
+    row.className = 'repeatable-row intervention-row';
+
+    row.innerHTML =
+      '<div class="columns is-multiline is-vcentered">' +
+        '<div class="column is-3"><label class="label">Type</label><div class="select is-fullwidth"><select class="intervention-type"></select></div></div>' +
+        '<div class="column is-3"><label class="label">Provider / Source</label><input class="input intervention-provider"></div>' +
+        '<div class="column is-2"><label class="label">Year</label><input class="input intervention-year" type="number" min="1900" max="2200"></div>' +
+        '<div class="column is-3"><label class="label">Details</label><input class="input intervention-details"></div>' +
+        '<div class="column is-1 has-text-right"><button type="button" class="button is-small is-danger is-light remove-row">×</button></div>' +
+      '</div>';
+
+    populateSelect(
+      row.querySelector('.intervention-type'),
+      getRefs('interventionTypes'),
+      'intervention_type_code',
+      'intervention_type_name',
+      'Select type'
+    );
+    row.querySelector('.remove-row').addEventListener('click', function() { row.remove(); });
+    document.getElementById('intervention-rows').appendChild(row);
+  }
+
+  function addNeedRow() {
+    const row = document.createElement('div');
+    row.className = 'repeatable-row need-row';
+
+    row.innerHTML =
+      '<div class="columns is-multiline is-vcentered">' +
+        '<div class="column is-4"><label class="label">Type</label><div class="select is-fullwidth"><select class="need-type"></select></div></div>' +
+        '<div class="column is-3"><label class="label">Priority</label><div class="select is-fullwidth"><select class="need-priority"></select></div></div>' +
+        '<div class="column is-4"><label class="label">Details</label><input class="input need-details"></div>' +
+        '<div class="column is-1 has-text-right"><button type="button" class="button is-small is-danger is-light remove-row">×</button></div>' +
+      '</div>';
+
+    populateSelect(
+      row.querySelector('.need-type'),
+      getRefs('interventionTypes'),
+      'intervention_type_code',
+      'intervention_type_name',
+      'Select type'
+    );
+    populateSelect(
+      row.querySelector('.need-priority'),
+      getRefs('interventionPriorities'),
+      'code',
+      'label',
+      'Select priority'
+    );
+    row.querySelector('.remove-row').addEventListener('click', function() { row.remove(); });
+    document.getElementById('need-rows').appendChild(row);
+  }
+
+  function handleRsbsaStatusChange(event) {
+    const value = event.target.value;
+    const isUnregistered = value === 'NOT_REGISTERED';
+    document.getElementById('rsbsa-number-panel').classList.toggle('is-hidden', isUnregistered);
+    document.getElementById('rsbsa-confirm-panel').classList.toggle('is-hidden', isUnregistered);
+
+    if (isUnregistered) {
+      document.getElementById('rsbsa-no').value = '';
+      document.getElementById('rsbsa-confirmed').checked = false;
+    } else {
+      document.getElementById('rsbsa-confirmed').checked = false;
+    }
+  }
+
+  function initMap() {
+    const el = document.getElementById('farm-map');
+    if (!el || typeof L === 'undefined') return;
+
+    appState.map = L.map(el).setView([10.75, 122.55], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(appState.map);
+
+    appState.map.on('click', function(event) {
+      setFarmPoint(event.latlng.lat, event.latlng.lng, 'MAP_PIN');
+    });
+  }
+
+  function setFarmPoint(lat, lng, method) {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+    document.getElementById('latitude').value = latitude.toFixed(6);
+    document.getElementById('longitude').value = longitude.toFixed(6);
+    document.getElementById('location-method').value = method || 'MAP_PIN';
+
+    if (!appState.marker) {
+      appState.marker = L.marker([latitude, longitude]).addTo(appState.map);
+    } else {
+      appState.marker.setLatLng([latitude, longitude]);
+    }
+
+    appState.map.setView([latitude, longitude], Math.max(appState.map.getZoom(), 15));
+  }
+
+  function useDeviceLocation() {
+    if (!navigator.geolocation) {
+      showMessage('Device GPS is not available in this browser. Please select the point on the map.', 'is-warning');
+      return;
+    }
+
+    showMessage('Getting device location…', 'is-info');
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        setFarmPoint(position.coords.latitude, position.coords.longitude, 'DEVICE_GPS');
+        showMessage('Device location captured. Please confirm the point on the map.', 'is-success');
+      },
+      function() {
+        showMessage('Unable to get device location. Please select the point on the map.', 'is-warning');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  async function loadInvitationContext(token) {
+    showMessage('Loading your secure profiling link…', 'is-info');
+
+    try {
+      const context = await serverCall('getInvitationContext', token);
+      appState.invitationContext = context;
+
+      document.getElementById('intake-context-title').textContent = 'Existing farmer profiling';
+      document.getElementById('intake-context-text').textContent =
+        'Secure link for ' + context.invitation.purpose.replace(/_/g, ' ') +
+        ', reference year ' + context.invitation.reference_year + '.';
+
+      document.getElementById('reference-year').value = context.invitation.reference_year;
+      prefillFarmer(context.farmer || {});
+
+      if (context.farms && context.farms.length) {
+        prefillFarm(context.farms[0]);
+      }
+
+      showMessage('Existing farmer profile loaded. Review and update the current profiling information.', 'is-success');
+    } catch (error) {
+      handleServerError(error);
+      document.getElementById('submit-profile').disabled = true;
+    }
+  }
+
+  function prefillFarmer(farmer) {
+    const rawRsbsaStatus = String(farmer.rsbsa_registration_status || '').toUpperCase();
+    const uiRsbsaStatus = rawRsbsaStatus === 'NOT_REGISTERED'
+      ? 'NOT_REGISTERED'
+      : (rawRsbsaStatus ? 'REGISTERED' : '');
+    setRadioValue('rsbsa_status', uiRsbsaStatus);
+    const selected = document.querySelector('input[name="rsbsa_status"]:checked');
+    if (selected) handleRsbsaStatusChange({ target: selected });
+
+    setValue('rsbsa-no', farmer.rsbsa_no);
+    setValue('first-name', farmer.first_name);
+    setValue('middle-name', farmer.middle_name);
+    setValue('last-name', farmer.last_name);
+    setValue('suffix', farmer.suffix);
+    setValue('sex', farmer.sex);
+    setValue('marital-status', farmer.marital_status_code);
+    setValue('contact-no', farmer.contact_no);
+    setValue('alternate-contact-no', farmer.alternate_contact_no);
+    setValue('farmer-email', farmer.email);
+    setValue('association-name', farmer.association_name);
+
+    setLocationCascade(
+      'res',
+      farmer.residence_province_code,
+      farmer.residence_lgu_code,
+      farmer.residence_barangay_code
+    );
+    setValue('res-sitio', farmer.residence_sitio_purok_zone);
+    setValue('res-street', farmer.residence_street_road);
+    setValue('res-house', farmer.residence_house_lot_block);
+    setValue('res-landmark', farmer.residence_landmark_detail);
+    document.getElementById('rsbsa-confirmed').checked = true;
+  }
+
+  function prefillFarm(farm) {
+    setValue('existing-farm-id', farm.farm_id);
+    setValue('farm-name', farm.farm_name_local_id);
+    setValue('tenure', farm.tenure_code);
+    setValue('total-farm-area', farm.total_farm_area_ha);
+    setValue('farm-address', farm.farm_address);
+    setLocationCascade('farm', farm.province_code, farm.lgu_code, farm.barangay_code);
+    setValue('topography', farm.topography_code);
+    setValue('road-distance', farm.road_distance_km);
+
+    if (farm.latitude !== '' && farm.longitude !== '') {
+      setFarmPoint(Number(farm.latitude), Number(farm.longitude), farm.location_capture_method || 'MAP_PIN');
+    }
+  }
+
+  function collectPayload() {
+    const statusInput = document.querySelector('input[name="rsbsa_status"]:checked');
+    const status = statusInput ? statusInput.value : '';
+
+    const payload = {
+      reference_year: Number(document.getElementById('reference-year').value),
+      farmer: {
+        rsbsa_registration_status: status,
+        rsbsa_no: cleanValue('rsbsa-no'),
+        rsbsa_capture_method: status === 'NOT_REGISTERED'
+          ? 'NOT_APPLICABLE'
+          : 'MANUAL',
+        rsbsa_info_confirmed: status === 'NOT_REGISTERED'
+          ? false
+          : document.getElementById('rsbsa-confirmed').checked,
+        first_name: cleanValue('first-name'),
+        middle_name: cleanValue('middle-name'),
+        last_name: cleanValue('last-name'),
+        suffix: cleanValue('suffix'),
+        sex: cleanValue('sex'),
+        marital_status_code: cleanValue('marital-status'),
+        contact_no: cleanValue('contact-no'),
+        alternate_contact_no: cleanValue('alternate-contact-no'),
+        email: cleanValue('farmer-email'),
+        association_name: cleanValue('association-name'),
+        residence_province_code: cleanValue('res-province'),
+        residence_lgu_code: cleanValue('res-lgu'),
+        residence_barangay_code: cleanValue('res-barangay'),
+        residence_sitio_purok_zone: cleanValue('res-sitio'),
+        residence_street_road: cleanValue('res-street'),
+        residence_house_lot_block: cleanValue('res-house'),
+        residence_landmark_detail: cleanValue('res-landmark')
+      },
+      farms: [collectFarmPayload()],
+      facilities: collectFacilities(),
+      interventions_received: collectInterventions(),
+      intervention_needs: collectNeeds()
+    };
+
+    return payload;
+  }
+
+  function collectFarmPayload() {
+    const farm = {
+      farm_id: cleanValue('existing-farm-id'),
+      farm_name_local_id: cleanValue('farm-name'),
+      tenure_code: cleanValue('tenure'),
+      total_farm_area_ha: numberValue('total-farm-area'),
+      farm_address: cleanValue('farm-address'),
+      province_code: cleanValue('farm-province'),
+      lgu_code: cleanValue('farm-lgu'),
+      barangay_code: cleanValue('farm-barangay'),
+      latitude: numberValue('latitude'),
+      longitude: numberValue('longitude'),
+      location_capture_method: cleanValue('location-method') || 'MAP_PIN',
+      topography_code: cleanValue('topography'),
+      road_distance_km: numberValue('road-distance'),
+      water_sources: Array.from(document.querySelectorAll('.water-source-checkbox:checked')).map(function(input, index) {
+        return {
+          water_source_code: input.value,
+          is_primary: index === 0,
+          remarks: ''
+        };
+      }),
+      crops: []
+    };
+
+    document.querySelectorAll('.commodity-card').forEach(function(card) {
+      const toggle = card.querySelector('.commodity-toggle');
+      if (!toggle.checked) return;
+
+      const code = toggle.value;
+      const key = code.toLowerCase();
+
+      farm.crops.push({
+        commodity_code: code,
+        trees_newly_planted: numberValue(key + '-new'),
+        trees_non_bearing: numberValue(key + '-nonbearing'),
+        trees_bearing: numberValue(key + '-bearing'),
+        mortality_count: numberValue(key + '-mortality'),
+        area_planted_ha: numberValue(key + '-area'),
+        plantings: Array.from(card.querySelectorAll('.planting-row')).map(function(row) {
+          return {
+            variety_code: row.querySelector('.planting-variety').value,
+            year_planted: Number(row.querySelector('.planting-year').value),
+            remarks: ''
+          };
+        }).filter(function(row) {
+          return row.variety_code || row.year_planted;
+        }),
+        production: Array.from(card.querySelectorAll('.production-row')).map(function(row) {
+          const volume = row.querySelector('.production-volume').value;
+          const price = row.querySelector('.production-price').value;
+
+          return {
+            harvest_date: row.querySelector('.production-date').value,
+            production_year: Number(row.querySelector('.production-year').value || document.getElementById('reference-year').value),
+            production_volume_kg: volume === '' ? 0 : Number(volume),
+            selling_price_per_kg: price === '' ? '' : Number(price),
+            remarks: ''
+          };
+        }).filter(function(row) {
+          return row.harvest_date || row.production_volume_kg || row.selling_price_per_kg !== '';
+        })
+      });
+    });
+
+    return farm;
+  }
+
+  function collectFacilities() {
+    return Array.from(document.querySelectorAll('.facility-row')).map(function(row) {
+      return {
+        description: row.querySelector('.facility-description').value.trim(),
+        quantity: valueOrBlank(row.querySelector('.facility-quantity').value),
+        capacity: row.querySelector('.facility-capacity').value.trim(),
+        model_description: row.querySelector('.facility-model').value.trim(),
+        condition_status: row.querySelector('.facility-condition').value.trim(),
+        utilization_status: row.querySelector('.facility-utilization').value,
+        remarks: ''
+      };
+    }).filter(function(row) { return row.description; });
+  }
+
+  function collectInterventions() {
+    return Array.from(document.querySelectorAll('.intervention-row')).map(function(row) {
+      return {
+        intervention_type_code: row.querySelector('.intervention-type').value,
+        provider: row.querySelector('.intervention-provider').value.trim(),
+        year_received: valueOrBlank(row.querySelector('.intervention-year').value),
+        details: row.querySelector('.intervention-details').value.trim(),
+        remarks: ''
+      };
+    }).filter(function(row) { return row.intervention_type_code; });
+  }
+
+  function collectNeeds() {
+    return Array.from(document.querySelectorAll('.need-row')).map(function(row) {
+      return {
+        intervention_type_code: row.querySelector('.need-type').value,
+        priority: row.querySelector('.need-priority').value,
+        details: row.querySelector('.need-details').value.trim(),
+        remarks: ''
+      };
+    }).filter(function(row) { return row.intervention_type_code; });
+  }
+
+  function validateClientPayload(payload) {
+    const form = document.getElementById('profiling-form');
+    if (!form.reportValidity()) return false;
+
+    if (!payload.farmer.rsbsa_registration_status) {
+      showMessage('Please select the RSBSA registration status.', 'is-warning');
+      return false;
+    }
+
+    if (payload.farmer.rsbsa_registration_status !== 'NOT_REGISTERED') {
+      if (!payload.farmer.rsbsa_no) {
+        showMessage('RSBSA number is required for registered farmers.', 'is-warning');
+        return false;
+      }
+      if (!payload.farmer.rsbsa_info_confirmed) {
+        showMessage('Please confirm that you reviewed the RSBSA information.', 'is-warning');
+        return false;
+      }
+    }
+
+    const farm = payload.farms[0];
+    if (!farm.water_sources.length) {
+      showMessage('Please select at least one source of water.', 'is-warning');
+      return false;
+    }
+
+    if (!farm.crops.length) {
+      showMessage('Please select Coffee and/or Cacao and enter the crop profile.', 'is-warning');
+      return false;
+    }
+
+    for (const crop of farm.crops) {
+      if (!crop.plantings.length) {
+        showMessage('Please add at least one variety/year planted for ' + crop.commodity_code + '.', 'is-warning');
+        return false;
+      }
+      for (const planting of crop.plantings) {
+        if (!planting.variety_code || !planting.year_planted) {
+          showMessage('Please complete the variety and year planted fields.', 'is-warning');
+          return false;
         }
-      } catch (error) {
-        showMessage('OCR failed. You can still enter the RSBSA number manually.', 'is-warning');
-      } finally {
-        releaseRsbsaImage();
+      }
+    }
+
+    return true;
+  }
+
+  function previewSubmission() {
+    const payload = collectPayload();
+    if (!validateClientPayload(payload)) return;
+
+    const summary = document.getElementById('review-summary');
+    summary.innerHTML = renderHumanReviewHtml(payload, { audience: 'farmer' });
+    summary.classList.remove('is-hidden');
+    summary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function submitProfilingForm(event) {
+    event.preventDefault();
+
+    if (appState.submissionCompleted) {
+      showMessage('This profile has already been submitted. Use Start New Profile to create another submission.', 'is-warning');
+      return;
+    }
+
+    const payload = collectPayload();
+    if (!validateClientPayload(payload)) return;
+
+    setSubmitBusy(true);
+    showMessage('Submitting profile for Validator review…', 'is-info');
+
+    try {
+      let result;
+      if (appState.invitationToken) {
+        result = await serverCall('submitExistingFarmerProfile', appState.invitationToken, payload);
+      } else {
+        result = await serverCall('submitNewFarmerProfile', payload);
+      }
+
+      showMessage(
+        'Submitted successfully. Reference: ' + result.submission_id +
+        '. Status: ' + result.status + '.',
+        'is-success'
+      );
+
+      const summary = document.getElementById('review-summary');
+      summary.innerHTML =
+        '<div class="review-success">' +
+          '<strong>Submission received.</strong>' +
+          '<div>Reference: <code>' + escapeHtml(result.submission_id || '') + '</code></div>' +
+          '<div>Status: ' + escapeHtml(result.status || '') + '</div>' +
+        '</div>';
+      summary.classList.remove('is-hidden');
+
+      appState.submissionCompleted = true;
+      document.getElementById('submit-profile').disabled = true;
+      document.getElementById('preview-submission').disabled = true;
+
+      if (!appState.invitationToken) {
+        document.getElementById('start-new-profile').classList.remove('is-hidden');
+      }
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      if (!appState.submissionCompleted) {
+        setSubmitBusy(false);
+      } else {
+        document.getElementById('submit-profile').classList.remove('is-loading');
+        document.getElementById('submit-profile').disabled = true;
+      }
+    }
+  }
+
+  function resetForNewProfile() {
+    if (appState.invitationToken) {
+      showMessage('A secure existing-farmer link cannot be reset into a new public profile.', 'is-warning');
+      return;
+    }
+
+    const form = document.getElementById('profiling-form');
+    form.reset();
+
+    appState.submissionCompleted = false;
+    appState.invitationContext = null;
+    appState.selectedSubmissionId = '';
+
+    document.getElementById('reference-year').value =
+      (appState.bootstrap && appState.bootstrap.app && appState.bootstrap.app.currentYear) ||
+      new Date().getFullYear();
+
+    document.getElementById('rsbsa-number-panel').classList.add('is-hidden');
+    document.getElementById('rsbsa-confirm-panel').classList.add('is-hidden');
+    document.getElementById('rsbsa-no').value = '';
+    document.getElementById('rsbsa-confirmed').checked = false;
+
+    populateReferenceControls();
+    setLocationCascade('res', '', '', '');
+    setLocationCascade('farm', '', '', '');
+
+    renderWaterSources();
+    renderCommoditySections();
+
+    document.getElementById('facility-rows').innerHTML = '';
+    document.getElementById('intervention-rows').innerHTML = '';
+    document.getElementById('need-rows').innerHTML = '';
+
+    setValue('existing-farm-id', '');
+    setValue('latitude', '');
+    setValue('longitude', '');
+    setValue('location-method', '');
+
+    if (appState.marker && appState.map) {
+      appState.map.removeLayer(appState.marker);
+      appState.marker = null;
+      appState.map.setView([10.75, 122.55], 9);
+    }
+
+    const summary = document.getElementById('review-summary');
+    summary.innerHTML = '';
+    summary.classList.add('is-hidden');
+
+    const submitButton = document.getElementById('submit-profile');
+    submitButton.classList.remove('is-loading');
+    submitButton.disabled = false;
+
+    document.getElementById('preview-submission').disabled = false;
+    document.getElementById('start-new-profile').classList.add('is-hidden');
+
+    clearMessage();
+
+    document.getElementById('intake-context-title').textContent = 'New farmer intake';
+    document.getElementById('intake-context-text').textContent =
+      'Submit the profile for Validator review. Approved records are added to the canonical database.';
+
+    document.getElementById('intake-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (appState.map) {
+      setTimeout(function() { appState.map.invalidateSize(); }, 50);
+    }
+  }
+
+  function setSubmitBusy(busy) {
+    const button = document.getElementById('submit-profile');
+    button.classList.toggle('is-loading', busy);
+    button.disabled = busy;
+  }
+
+  async function loadValidatorQueue() {
+    const body = document.getElementById('validator-queue-body');
+    body.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+
+    try {
+      const rows = (await serverCall('listPendingSubmissions')) || [];
+      body.innerHTML = '';
+
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="7" class="has-text-grey">No pending submissions.</td></tr>';
+        return;
+      }
+
+      rows.forEach(function(row) {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td><code>' + escapeHtml(row.submission_id) + '</code></td>' +
+          '<td>' +
+            '<div>' + escapeHtml(row.subject_name || '—') + '</div>' +
+            (row.possible_duplicate
+              ? '<span class="duplicate-badge">Possible Duplicate' +
+                (row.pending_duplicate_count ? ' · ' + escapeHtml(String(row.pending_duplicate_count)) + ' pending match' + (row.pending_duplicate_count > 1 ? 'es' : '') : '') +
+                '</span>'
+              : '') +
+          '</td>' +
+          '<td>' + escapeHtml(row.submission_type || '') + '</td>' +
+          '<td>' + escapeHtml(String(row.reference_year || '')) + '</td>' +
+          '<td>' + escapeHtml(row.classification || '') + '</td>' +
+          '<td>' + escapeHtml(formatDateTime(row.submitted_at)) + '</td>' +
+          '<td><button class="button is-small is-link is-light review-submission" type="button">Review</button></td>';
+
+        tr.querySelector('.review-submission').addEventListener('click', function() {
+          openSubmissionReview(row.submission_id);
+        });
+        body.appendChild(tr);
+      });
+    } catch (error) {
+      handleServerError(error);
+      body.innerHTML = '<tr><td colspan="7" class="has-text-danger">Unable to load queue.</td></tr>';
+    }
+  }
+
+  async function openSubmissionReview(submissionId) {
+    showMessage('Loading submission…', 'is-info');
+
+    try {
+      const review = await serverCall('getSubmissionForReview', submissionId);
+      appState.selectedSubmissionId = submissionId;
+      renderValidatorReview(review);
+      document.getElementById('validator-review-panel').classList.remove('is-hidden');
+      document.getElementById('validator-review-panel').scrollIntoView({ behavior: 'smooth' });
+      clearMessage();
+    } catch (error) {
+      handleServerError(error);
+    }
+  }
+
+  function renderValidatorReview(review) {
+    const submission = review.submission || {};
+    const payload = review.payload || {};
+    const flags = Array.isArray(submission.flags) ? submission.flags : [];
+
+    let html =
+      '<div class="validator-overview">' +
+        '<div><span class="review-kicker">Submission</span><code>' + escapeHtml(submission.submission_id || '') + '</code></div>' +
+        '<div><span class="review-kicker">Type</span>' + escapeHtml(prettyCode(submission.submission_type || '')) + '</div>' +
+        '<div><span class="review-kicker">Year</span>' + escapeHtml(String(submission.reference_year || '')) + '</div>' +
+        '<div><span class="review-kicker">Classification</span>' + escapeHtml(prettyCode(submission.classification || '')) + '</div>' +
+      '</div>';
+
+    const pendingDuplicateCandidates = Array.isArray(review.pending_duplicate_candidates)
+      ? review.pending_duplicate_candidates
+      : [];
+    const liveIdentityCandidates = Array.isArray(review.live_identity_candidates)
+      ? review.live_identity_candidates
+      : [];
+    const hasDuplicateSignal =
+      pendingDuplicateCandidates.length > 0 ||
+      liveIdentityCandidates.length > 0 ||
+      String(review.live_identity_tier || 'NONE') !== 'NONE';
+
+    if (hasDuplicateSignal) {
+      html += renderDuplicateReviewPanel(review, payload);
+    }
+
+    if (flags.length) {
+      html += '<div class="validator-flags">' +
+        flags.map(function(flag) {
+          return '<span class="validator-flag">' + escapeHtml(flag) + '</span>';
+        }).join('') +
+        '</div>';
+    } else {
+      html += '<p class="review-ok">No system flags were raised for this submission.</p>';
+    }
+
+    html += renderHumanReviewHtml(payload, { audience: 'validator' });
+
+    if (submission.comparison && Object.keys(submission.comparison).length) {
+      html += renderComparisonHtml(submission.comparison);
+    }
+
+    const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+    const environment = appState.bootstrap && appState.bootstrap.app
+      ? String(appState.bootstrap.app.environment || '').toUpperCase()
+      : '';
+
+    if (environment === 'TEST' && staff && staff.role === 'ADMIN') {
+      html +=
+        '<details class="developer-details">' +
+          '<summary>Developer details (TEST only)</summary>' +
+          '<div class="developer-detail-block"><strong>Submitted payload</strong>' +
+            '<pre>' + escapeHtml(JSON.stringify(payload, null, 2)) + '</pre></div>' +
+          '<div class="developer-detail-block"><strong>Comparison data</strong>' +
+            '<pre>' + escapeHtml(JSON.stringify(submission.comparison || {}, null, 2)) + '</pre></div>' +
+        '</details>';
+    }
+
+    document.getElementById('validator-summary').innerHTML = html;
+    bindDuplicateCandidateActions();
+    renderIdentityReviews(review.identity_reviews || []);
+    document.getElementById('validator-remarks').value = '';
+    const duplicateRef = document.getElementById('duplicate-reference');
+    if (duplicateRef) {
+      const candidates = Array.isArray(review.pending_duplicate_candidates)
+        ? review.pending_duplicate_candidates
+        : [];
+      duplicateRef.value = candidates.length === 1
+        ? String(candidates[0].submission_id || '')
+        : '';
+    }
+  }
+
+  function renderDuplicateReviewPanel(review, payload) {
+    const submittedFarmer = payload.farmer || {};
+    const pending = Array.isArray(review.pending_duplicate_candidates)
+      ? review.pending_duplicate_candidates
+      : [];
+    const canonical = Array.isArray(review.live_identity_candidates)
+      ? review.live_identity_candidates
+      : [];
+    const reasons = Array.isArray(review.live_identity_reasons)
+      ? review.live_identity_reasons
+      : [];
+
+    let html =
+      '<section class="duplicate-review-panel">' +
+        '<div class="duplicate-review-heading">' +
+          '<span class="duplicate-badge duplicate-badge-large">Possible Duplicate</span>' +
+          '<strong>Reference-check before approving</strong>' +
+        '</div>' +
+        '<p class="duplicate-review-note">The system found identity signals that may refer to the same farmer. This does not automatically merge records.</p>';
+
+    canonical.forEach(function(candidate) {
+      html +=
+        '<div class="duplicate-comparison">' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Submitted Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(submittedFarmer) || '—') + '</strong>' +
+            reviewLine('RSBSA', submittedFarmer.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', submittedFarmer.contact_no) +
+            reviewLine('Barangay Code', submittedFarmer.residence_barangay_code) +
+          '</div>' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Existing Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(candidate) || '—') + '</strong>' +
+            reviewLine('Farmer ID', candidate.farmer_id) +
+            reviewLine('RSBSA', candidate.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', candidate.contact_no) +
+            reviewLine('Barangay Code', candidate.residence_barangay_code) +
+            reviewLine('Status', prettyCode(candidate.record_status)) +
+          '</div>' +
+        '</div>';
+    });
+
+    pending.forEach(function(match) {
+      const candidate = match.farmer || {};
+      html +=
+        '<div class="duplicate-comparison">' +
+          '<div class="duplicate-person">' +
+            '<span class="review-kicker">Submitted Farmer</span>' +
+            '<strong>' + escapeHtml(fullName(submittedFarmer) || '—') + '</strong>' +
+            reviewLine('RSBSA', submittedFarmer.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', submittedFarmer.contact_no) +
+            reviewLine('Barangay Code', submittedFarmer.residence_barangay_code) +
+          '</div>' +
+          '<div class="duplicate-person duplicate-candidate-card" data-candidate-submission-id="' + escapeAttr(match.submission_id || '') + '">' +
+            '<span class="review-kicker">Other Pending Submission</span>' +
+            '<strong>' + escapeHtml(fullName(candidate) || '—') + '</strong>' +
+            reviewLine('Submission', match.submission_id) +
+            reviewLine('Match Tier', prettyCode(match.tier)) +
+            reviewLine('RSBSA', candidate.rsbsa_no || 'Not registered / none') +
+            reviewLine('Contact', candidate.contact_no) +
+            reviewLine('Barangay Code', candidate.residence_barangay_code) +
+            reviewLine('Reason', (match.reasons || []).join('; ')) +
+            '<div class="candidate-review-actions">' +
+              '<input class="input candidate-spam-reason" type="text" placeholder="Reason for spam/invalid (required only for Spam)">' +
+              '<div class="buttons are-small mt-2">' +
+                '<button type="button" class="button is-light action-secondary candidate-mark-duplicate">Mark this as Duplicate</button>' +
+                '<button type="button" class="button is-danger is-light candidate-mark-spam">Mark as Spam / Invalid</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    });
+
+    if (reasons.length) {
+      html += '<div class="duplicate-reasons"><strong>Detected reason:</strong> ' +
+        escapeHtml(reasons.join('; ')) + '</div>';
+    }
+
+    html += '</section>';
+    return html;
+  }
+
+  function bindDuplicateCandidateActions() {
+    document.querySelectorAll('.duplicate-candidate-card').forEach(function(card) {
+      const candidateSubmissionId = String(card.dataset.candidateSubmissionId || '').trim();
+      if (!candidateSubmissionId) return;
+
+      const duplicateButton = card.querySelector('.candidate-mark-duplicate');
+      const spamButton = card.querySelector('.candidate-mark-spam');
+      const spamReason = card.querySelector('.candidate-spam-reason');
+
+      if (duplicateButton) {
+        duplicateButton.addEventListener('click', async function() {
+          if (!appState.selectedSubmissionId) return;
+
+          const confirmed = window.confirm(
+            'Mark ' + candidateSubmissionId +
+            ' as a duplicate of the submission currently being reviewed (' +
+            appState.selectedSubmissionId + ')?'
+          );
+          if (!confirmed) return;
+
+          duplicateButton.classList.add('is-loading');
+          try {
+            await serverCall(
+              'voidSubmission',
+              candidateSubmissionId,
+              'DUPLICATE_SUBMISSION',
+              appState.selectedSubmissionId,
+              'Marked as duplicate while reference-checking ' + appState.selectedSubmissionId + '.'
+            );
+            showMessage(candidateSubmissionId + ' was marked as duplicate.', 'is-success');
+            await openSubmissionReview(appState.selectedSubmissionId);
+            await loadValidatorQueue();
+          } catch (error) {
+            handleServerError(error);
+          } finally {
+            duplicateButton.classList.remove('is-loading');
+          }
+        });
+      }
+
+      if (spamButton) {
+        spamButton.addEventListener('click', async function() {
+          const reason = spamReason ? spamReason.value.trim() : '';
+          if (!reason) {
+            showMessage('Enter the spam/invalid reason on the candidate card first.', 'is-warning');
+            if (spamReason) spamReason.focus();
+            return;
+          }
+
+          const confirmed = window.confirm(
+            'Mark ' + candidateSubmissionId + ' as spam/invalid? This keeps the record for audit but removes it from the active queue.'
+          );
+          if (!confirmed) return;
+
+          spamButton.classList.add('is-loading');
+          try {
+            await serverCall(
+              'voidSubmission',
+              candidateSubmissionId,
+              'SPAM_INVALID',
+              '',
+              reason
+            );
+            showMessage(candidateSubmissionId + ' was marked as spam/invalid.', 'is-success');
+            await openSubmissionReview(appState.selectedSubmissionId);
+            await loadValidatorQueue();
+          } catch (error) {
+            handleServerError(error);
+          } finally {
+            spamButton.classList.remove('is-loading');
+          }
+        });
       }
     });
   }
 
-  function extractRsbsaCandidate(text) {
-    const normalized = String(text || '')
-      .toUpperCase()
-      .replace(/[–—]/g, '-');
+  function renderHumanReviewHtml(payload, options) {
+    const audience = options && options.audience ? options.audience : 'farmer';
+    const farmer = payload.farmer || {};
+    const farms = Array.isArray(payload.farms) ? payload.farms : [];
+    const facilities = Array.isArray(payload.facilities) ? payload.facilities : [];
+    const received = Array.isArray(payload.interventions_received) ? payload.interventions_received : [];
+    const needs = Array.isArray(payload.intervention_needs) ? payload.intervention_needs : [];
 
-    // Temporary permissive pattern. Replace/tighten after the actual
-    // RSBSA ID number format has been verified from a sample card.
-    const match = normalized.match(/\b\d{2}[\s-]*\d{2}[\s-]*\d{2}[\s-]*\d{4,8}\b/);
-    if (!match) return '';
+    let html = '<div class="human-review">';
 
-    return match[0].replace(/\s+/g, '-').replace(/-+/g, '-');
-  }
+    html += reviewSection(
+      'Farmer Information',
+      [
+        reviewLine('Name', fullName(farmer)),
+        reviewLine('RSBSA', farmer.rsbsa_registration_status === 'NOT_REGISTERED'
+          ? 'Not yet registered'
+          : (farmer.rsbsa_no || 'Registered')),
+        reviewLine('Sex', prettyCode(farmer.sex)),
+        reviewLine('Marital Status', referenceLabel('maritalStatuses', 'marital_status_code', 'marital_status_name', farmer.marital_status_code)),
+        reviewLine('Contact', farmer.contact_no),
+        reviewLine('Alternate Contact', farmer.alternate_contact_no),
+        reviewLine('Email', farmer.email),
+        reviewLine('Association', farmer.association_name),
+        reviewLine('Residence', formatLocation(
+          farmer.residence_province_code,
+          farmer.residence_lgu_code,
+          farmer.residence_barangay_code,
+          [
+            farmer.residence_house_lot_block,
+            farmer.residence_street_road,
+            farmer.residence_sitio_purok_zone,
+            farmer.residence_landmark_detail
+          ]
+        ))
+      ].filter(Boolean).join('')
+    );
 
-  function releaseRsbsaImage() {
-    if (appState.rsbsa.sourceImageUrl) {
-      URL.revokeObjectURL(appState.rsbsa.sourceImageUrl);
-      appState.rsbsa.sourceImageUrl = null;
+    farms.forEach(function(farm, index) {
+      const crops = Array.isArray(farm.crops) ? farm.crops : [];
+      let farmBody = [
+        reviewLine('Farm Name / Local ID', farm.farm_name_local_id || ('Farm ' + (index + 1))),
+        reviewLine('Tenure', referenceLabel('tenure', 'tenure_code', 'tenure_name', farm.tenure_code)),
+        reviewLine('Total Farm Area', numberText(farm.total_farm_area_ha, ' ha')),
+        reviewLine('Farm Address', farm.farm_address),
+        reviewLine('Location', formatLocation(farm.province_code, farm.lgu_code, farm.barangay_code, [])),
+        reviewLine('Topography', referenceLabel('topographies', 'topography_code', 'topography_name', farm.topography_code)),
+        reviewLine('Road Access Distance', numberText(farm.road_distance_km, ' km')),
+        reviewLine('Water Source', (farm.water_sources || []).map(function(item) {
+          return referenceLabel('waterSources', 'water_source_code', 'water_source_name', item.water_source_code);
+        }).filter(Boolean).join(', ')),
+        reviewLine('Map Point', farm.latitude !== undefined && farm.longitude !== undefined
+          ? String(farm.latitude) + ', ' + String(farm.longitude) + ' (' + prettyCode(farm.location_capture_method) + ')'
+          : '')
+      ].filter(Boolean).join('');
+
+      crops.forEach(function(crop) {
+        farmBody += renderCropReviewHtml(crop);
+      });
+
+      html += reviewSection('Farm ' + (index + 1), farmBody);
+    });
+
+    html += reviewSection(
+      'Facilities / Equipment',
+      facilities.length
+        ? facilities.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(item.description || item.facility_description || 'Facility / Equipment') + '</strong>' +
+              reviewLine('Quantity', item.quantity || item.facility_quantity) +
+              reviewLine('Capacity', item.capacity || item.facility_capacity) +
+              reviewLine('Model / Description', item.model_description || item.facility_model) +
+              reviewLine('Condition / Status', item.condition_status || item.facility_condition) +
+              reviewLine('Utilization', prettyCode(item.utilization_status || item.facility_utilization)) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    html += reviewSection(
+      'Interventions Received',
+      received.length
+        ? received.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(referenceLabel('interventionTypes', 'intervention_type_code', 'intervention_type_name', item.intervention_type_code || item.type_code)) + '</strong>' +
+              reviewLine('Provider / Source', item.provider_source || item.provider) +
+              reviewLine('Year', item.year_received || item.year) +
+              reviewLine('Details', item.details || item.remarks) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    html += reviewSection(
+      'Interventions Needed',
+      needs.length
+        ? needs.map(function(item) {
+            return '<div class="review-list-item">' +
+              '<strong>' + escapeHtml(referenceLabel('interventionTypes', 'intervention_type_code', 'intervention_type_name', item.intervention_type_code || item.type_code)) + '</strong>' +
+              reviewLine('Priority', prettyCode(item.priority || item.priority_code)) +
+              reviewLine('Details', item.details || item.remarks) +
+            '</div>';
+          }).join('')
+        : '<p class="review-empty">None entered.</p>'
+    );
+
+    if (audience === 'farmer') {
+      html += '<p class="review-guidance">Please review the information above before submitting it for validation.</p>';
     }
 
-    // We intentionally do not upload or persist the selected image.
+    html += '</div>';
+    return html;
+  }
+
+  function renderCropReviewHtml(crop) {
+    const plantings = Array.isArray(crop.plantings) ? crop.plantings : [];
+    const production = Array.isArray(crop.production) ? crop.production : [];
+    const commodity = prettyCode(crop.commodity_code || '');
+
+    let body =
+      '<div class="crop-review">' +
+        '<h4>' + escapeHtml(commodity) + '</h4>' +
+        '<div class="review-grid">' +
+          reviewLine('Planted Area', numberText(crop.area_planted_ha, ' ha')) +
+          reviewLine('Newly Planted', crop.trees_newly_planted) +
+          reviewLine('Non-bearing', crop.trees_non_bearing) +
+          reviewLine('Bearing', crop.trees_bearing) +
+          reviewLine('Mortality', crop.mortality_count) +
+        '</div>';
+
+    body += '<div class="review-subgroup"><strong>Varieties / Plantings</strong>';
+    if (plantings.length) {
+      body += plantings.map(function(item) {
+        return '<div class="review-list-item">' +
+          escapeHtml(referenceLabel('varieties', 'variety_code', 'variety_name', item.variety_code)) +
+          (item.year_planted ? ' · Planted ' + escapeHtml(String(item.year_planted)) : '') +
+        '</div>';
+      }).join('');
+    } else {
+      body += '<p class="review-empty">None entered.</p>';
+    }
+    body += '</div>';
+
+    body += '<div class="review-subgroup"><strong>Production per Harvest</strong>';
+    if (production.length) {
+      body += production.map(function(item) {
+        return '<div class="review-list-item">' +
+          reviewLine('Harvest Date', item.harvest_date) +
+          reviewLine('Year', item.production_year || item.year) +
+          reviewLine('Volume', numberText(item.production_volume_kg, ' kg')) +
+          reviewLine('Price / kg', item.selling_price_per_kg !== '' && item.selling_price_per_kg !== undefined
+            ? '₱' + Number(item.selling_price_per_kg).toLocaleString()
+            : '') +
+        '</div>';
+      }).join('');
+    } else {
+      body += '<p class="review-empty">No harvest information entered.</p>';
+    }
+    body += '</div></div>';
+
+    return body;
+  }
+
+  function renderComparisonHtml(comparison) {
+    const entries = Object.keys(comparison || {});
+    if (!entries.length) return '';
+
+    let html = '<section class="review-section comparison-section"><h3>Previous vs Submitted</h3>';
+    entries.forEach(function(key) {
+      const value = comparison[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        html += '<div class="review-list-item"><strong>' + escapeHtml(prettyCode(key)) + '</strong>';
+        Object.keys(value).forEach(function(innerKey) {
+          html += reviewLine(prettyCode(innerKey), typeof value[innerKey] === 'object'
+            ? JSON.stringify(value[innerKey])
+            : value[innerKey]);
+        });
+        html += '</div>';
+      } else {
+        html += reviewLine(prettyCode(key), value);
+      }
+    });
+    html += '</section>';
+    return html;
+  }
+
+  function reviewSection(title, body) {
+    return '<section class="review-section"><h3>' + escapeHtml(title) + '</h3>' + body + '</section>';
+  }
+
+  function reviewLine(label, value) {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    return '<div class="review-row"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(String(value)) + '</strong></div>';
+  }
+
+  function fullName(farmer) {
+    return [
+      farmer.first_name,
+      farmer.middle_name,
+      farmer.last_name,
+      farmer.suffix
+    ].filter(Boolean).join(' ');
+  }
+
+  function prettyCode(value) {
+    return String(value || '')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, function(letter) { return letter.toUpperCase(); });
+  }
+
+  function numberText(value, suffix) {
+    if (value === '' || value === undefined || value === null) return '';
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toLocaleString() + (suffix || '') : String(value);
+  }
+
+  function referenceLabel(refName, valueField, labelField, value) {
+    const target = String(value || '');
+    const row = getRefs(refName).find(function(item) {
+      return String(item[valueField] || '') === target;
+    });
+    return row ? String(row[labelField] || target) : prettyCode(target);
+  }
+
+  function formatLocation(provinceCode, lguCode, barangayCode, localParts) {
+    const locations = appState.bootstrap && appState.bootstrap.locations
+      ? appState.bootstrap.locations
+      : { provinces: [], lgus: [], barangays: [] };
+
+    const province = (locations.provinces || []).find(function(item) {
+      return String(item.province_code || '') === String(provinceCode || '');
+    });
+    const lgu = (locations.lgus || []).find(function(item) {
+      return String(item.lgu_code || '') === String(lguCode || '');
+    });
+    const barangay = (locations.barangays || []).find(function(item) {
+      return String(item.barangay_code || '') === String(barangayCode || '');
+    });
+
+    return (localParts || []).concat([
+      barangay && barangay.barangay_name,
+      lgu && lgu.lgu_name,
+      province && province.province_name
+    ]).filter(function(value) {
+      return value !== undefined && value !== null && String(value).trim() !== '';
+    }).join(', ');
+  }
+
+
+  function renderIdentityReviews(reviews) {
+    const section = document.getElementById('identity-review-section');
+    const list = document.getElementById('identity-review-list');
+    list.innerHTML = '';
+
+    if (!reviews.length) {
+      section.classList.add('is-hidden');
+      return;
+    }
+
+    section.classList.remove('is-hidden');
+
+    reviews.forEach(function(review) {
+      const card = document.createElement('div');
+      card.className = 'identity-review-card';
+
+      const candidate = review.candidate || {};
+      const candidateName = [
+        candidate.first_name,
+        candidate.middle_name,
+        candidate.last_name,
+        candidate.suffix
+      ].filter(Boolean).join(' ');
+
+      card.innerHTML =
+        '<p><strong>Tier:</strong> ' + escapeHtml(review.match_tier || '') + '</p>' +
+        '<p><strong>Reason:</strong> ' + escapeHtml(review.match_reasons || '') + '</p>' +
+        (candidate.farmer_id
+          ? '<p><strong>Candidate:</strong> ' + escapeHtml(candidateName) +
+            ' — <code>' + escapeHtml(candidate.farmer_id) + '</code>' +
+            (candidate.rsbsa_no ? ' — RSBSA ' + escapeHtml(candidate.rsbsa_no) : '') +
+            '</p>'
+          : '') +
+        '<div class="columns is-multiline mt-2">' +
+          '<div class="column is-5"><div class="select is-fullwidth"><select class="identity-resolution">' +
+            '<option value="">Select resolution</option>' +
+            '<option value="LINK_TO_EXISTING">Link to existing farmer</option>' +
+            '<option value="CREATE_NEW">Create new farmer</option>' +
+            '<option value="CONFIRMED_DIFFERENT">Confirmed different farmer / no identity change</option>' +
+            '<option value="IDENTITY_CORRECTION_APPROVED">Approve protected identity correction</option>' +
+            '<option value="MERGE_REQUIRED">Merge required</option>' +
+            '<option value="MERGED">Merged</option>' +
+          '</select></div></div>' +
+          '<div class="column is-5"><input class="input identity-notes" placeholder="Resolution notes"></div>' +
+          '<div class="column is-2"><button type="button" class="button is-small is-link resolve-identity">Resolve</button></div>' +
+        '</div>' +
+        '<p class="is-size-7 has-text-grey">Current status: ' + escapeHtml(review.review_status || '') +
+        (review.resolution ? ' / ' + escapeHtml(review.resolution) : '') + '</p>';
+
+      const button = card.querySelector('.resolve-identity');
+      const select = card.querySelector('.identity-resolution');
+      const notes = card.querySelector('.identity-notes');
+
+      if (String(review.review_status || '').toUpperCase() === 'RESOLVED') {
+        button.disabled = true;
+        select.disabled = true;
+        notes.disabled = true;
+        select.value = review.resolution || '';
+      } else {
+        button.addEventListener('click', async function() {
+          if (!select.value) {
+            showMessage('Select an identity-review resolution first.', 'is-warning');
+            return;
+          }
+
+          button.classList.add('is-loading');
+          try {
+            await serverCall(
+              'resolveIdentityReview',
+              review.identity_review_id,
+              select.value,
+              notes.value
+            );
+            showMessage('Identity review resolved.', 'is-success');
+            await openSubmissionReview(appState.selectedSubmissionId);
+          } catch (error) {
+            handleServerError(error);
+          } finally {
+            button.classList.remove('is-loading');
+          }
+        });
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  async function voidSelectedSubmissionAsDuplicate() {
+    if (!appState.selectedSubmissionId) return;
+
+    const duplicateReference = cleanValue('duplicate-reference');
+    if (!duplicateReference) {
+      showMessage('Enter the duplicate submission or farmer reference before marking this entry as duplicate.', 'is-warning');
+      document.getElementById('duplicate-reference').focus();
+      return;
+    }
+
+    const button = document.getElementById('duplicate-submission');
+    button.classList.add('is-loading');
+
+    try {
+      await serverCall(
+        'voidSubmission',
+        appState.selectedSubmissionId,
+        'DUPLICATE_SUBMISSION',
+        duplicateReference,
+        document.getElementById('validator-remarks').value
+      );
+      showMessage('Submission marked as duplicate and removed from the active Validator Queue.', 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
+  }
+
+  async function voidSelectedSubmissionAsSpam() {
+    if (!appState.selectedSubmissionId) return;
+
+    const remarks = document.getElementById('validator-remarks').value.trim();
+    if (!remarks) {
+      showMessage('Enter a reason before marking the submission as spam/invalid.', 'is-warning');
+      document.getElementById('validator-remarks').focus();
+      return;
+    }
+
+    const button = document.getElementById('spam-submission');
+    button.classList.add('is-loading');
+
+    try {
+      await serverCall(
+        'voidSubmission',
+        appState.selectedSubmissionId,
+        'SPAM_INVALID',
+        '',
+        remarks
+      );
+      showMessage('Submission marked as spam/invalid and removed from the active Validator Queue.', 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
+  }
+
+  async function approveSelectedSubmission() {
+    if (!appState.selectedSubmissionId) return;
+
+    const button = document.getElementById('approve-submission');
+    button.classList.add('is-loading');
+
+    try {
+      const result = await serverCall(
+        'approveSubmission',
+        appState.selectedSubmissionId,
+        document.getElementById('validator-remarks').value
+      );
+      showMessage('Submission approved. Farmer: ' + result.farmer_id, 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
+  }
+
+  async function returnSelectedSubmission() {
+    if (!appState.selectedSubmissionId) return;
+
+    const remarks = document.getElementById('validator-remarks').value.trim();
+    if (!remarks) {
+      showMessage('Please enter the reason for returning the submission.', 'is-warning');
+      return;
+    }
+
+    const button = document.getElementById('return-submission');
+    button.classList.add('is-loading');
+
+    try {
+      await serverCall('returnSubmission', appState.selectedSubmissionId, remarks);
+      showMessage('Submission returned for correction.', 'is-success');
+      appState.selectedSubmissionId = '';
+      document.getElementById('validator-review-panel').classList.add('is-hidden');
+      await loadValidatorQueue();
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.classList.remove('is-loading');
+    }
+  }
+
+  function cleanValue(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || '').trim() : '';
+  }
+
+  function numberValue(id) {
+    const value = cleanValue(id);
+    return value === '' ? 0 : Number(value);
+  }
+
+  function valueOrBlank(value) {
+    return String(value || '').trim() === '' ? '' : Number(value);
+  }
+
+  function setValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value === undefined || value === null ? '' : value;
+  }
+
+  function setRadioValue(name, value) {
+    document.querySelectorAll('input[name="' + name + '"]').forEach(function(input) {
+      input.checked = input.value === value;
+    });
+  }
+
+  function formatDateTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   }
 
   function showMessage(message, className) {
     const el = document.getElementById('app-message');
-    el.className = 'notification ' + (className || 'is-info');
-    el.textContent = message;
+    const tone = className || 'is-info';
+
+    if (appState.toastTimer) {
+      clearTimeout(appState.toastTimer);
+      appState.toastTimer = null;
+    }
+
+    el.className = 'notification app-toast ' + tone;
+    el.setAttribute(
+      'role',
+      tone === 'is-danger' || tone === 'is-warning' ? 'alert' : 'status'
+    );
+
+    el.innerHTML =
+      '<div class="app-toast-content">' +
+        '<span>' + escapeHtml(message) + '</span>' +
+        '<button type="button" class="app-toast-close" aria-label="Dismiss notification">×</button>' +
+      '</div>';
+
+    el.querySelector('.app-toast-close').addEventListener('click', clearMessage);
+    el.classList.remove('is-hidden');
+
+    const timeout = tone === 'is-danger'
+      ? 0
+      : (tone === 'is-warning' ? 8000 : 5000);
+
+    if (timeout) {
+      appState.toastTimer = setTimeout(clearMessage, timeout);
+    }
+  }
+
+  function clearMessage() {
+    if (appState.toastTimer) {
+      clearTimeout(appState.toastTimer);
+      appState.toastTimer = null;
+    }
+
+    const el = document.getElementById('app-message');
+    el.classList.add('is-hidden');
+    el.innerHTML = '';
   }
 
   function handleServerError(error) {
-    document.getElementById('loading-state').classList.add('is-hidden');
-    showMessage(error && error.message ? error.message : 'An unexpected server error occurred.', 'is-danger');
+    const message = error && error.message ? error.message : 'An unexpected server error occurred.';
+    showMessage(message, 'is-danger');
+  }
+
+  function escapeHtml(value) {
+    return String(value === undefined || value === null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
   }
 </script>

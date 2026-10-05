@@ -12,7 +12,7 @@ The project follows a TEST → UAT → HVCP Production workflow.
 - [x] Define PSGC Province → Municipality/City → Barangay references.
 - [x] Include approximate farm point capture.
 - [x] Keep parcel-boundary digitizing/geotagging out of V1; defer RSBSA parcel coordination to backlog.
-- [x] Include RSBSA status and client-side OCR in V1 scope.
+- [x] Include RSBSA status and manual number entry in V1; OCR removed to reduce operational risk.
 - [x] Define permanent Farmer Master + time-series profiling model.
 - [x] Finalize V1 farmer access model:
   - public generic intake link for new farmers;
@@ -60,14 +60,12 @@ Milestone: **New farmer public intake and existing farmer personalized link can 
 
 Milestone: **A farmer can accumulate multiple approved yearly profiling records while preserving history.**
 
-## Phase 3 — OCR + change/anomaly + validation — Oct 11–14
+## Phase 3 — identity safeguards + change/anomaly + validation — Oct 11–14
 
-- [ ] Camera/file capture via mobile file input.
-- [ ] Client-side image preprocessing.
-- [ ] Tesseract.js OCR.
-- [ ] Extract RSBSA number and farmer name.
-- [ ] User verification screen.
-- [ ] Ensure source image is not uploaded or retained.
+- [x] Manual RSBSA number entry with user verification.
+- [x] No RSBSA ID image capture or OCR in V1.
+- [x] Exact RSBSA duplicate check.
+- [x] Conservative near-duplicate RSBSA check for one-character typos and adjacent transpositions.
 - [ ] Compare current submission with latest approved record.
 - [ ] Classify NO_CHANGE / MODIFICATION / NEW_ENTRY / EXPANSION / ANOMALY.
 - [ ] Flag duplicate/RSBSA conflicts.
@@ -112,7 +110,7 @@ Milestone: **Validator can safely distinguish routine annual change from expansi
 - [ ] Desktop browser testing.
 - [ ] Slow-network testing.
 - [ ] Concurrent submission tests.
-- [ ] OCR tests with sample images.
+- [ ] Manual RSBSA typo/transposition and collision tests.
 - [ ] Map and PSGC validation.
 - [ ] Realistic demo dataset.
 
@@ -178,6 +176,6 @@ Regional Dashboard
 ## Post-V1 backlog
 
 - Coordinate with RSBSA on parcel/geospatial boundary data, identifiers, exchange format, and update process.
-- Confirm the exact RSBSA number format using a privacy-safe sample for OCR tuning.
+- Confirm the exact RSBSA number format using a privacy-safe sample for validation/normalization; OCR remains out of V1.
 - Evaluate whether RSBSA parcel geometry should later be referenced or displayed in the profiling system.
 - Parcel digitizing/geotagging remains outside the October 22 V1 scope.
