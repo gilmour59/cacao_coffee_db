@@ -403,6 +403,49 @@
     color: var(--red-700) !important;
   }
 
+  .app-toast {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 3000;
+    width: min(420px, calc(100vw - 2rem));
+    margin: 0 !important;
+    box-shadow: var(--shadow-md);
+  }
+
+  .app-toast-content {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+  }
+
+  .app-toast-content > span {
+    flex: 1 1 auto;
+    line-height: 1.45;
+    font-weight: 700;
+  }
+
+  .app-toast-close {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: rgba(255,255,255,.7);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .app-toast-close:hover,
+  .app-toast-close:focus {
+    background: #fff;
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
   #farm-map {
     height: 360px;
     border-radius: var(--radius-md);
@@ -736,6 +779,13 @@
   @media (max-width: 768px) {
     :root {
       --tap: 50px;
+    }
+
+    .app-toast {
+      top: .75rem;
+      right: .75rem;
+      left: .75rem;
+      width: auto;
     }
 
     .section.app-shell {
