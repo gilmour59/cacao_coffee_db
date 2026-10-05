@@ -3,7 +3,7 @@
     color-scheme: light;
     --app-max-width: 1180px;
     --ink: #1f2a24;
-    --muted: #66736c;
+    --muted: #45604f;
     --canvas: #f5f6f1;
     --surface: #ffffff;
     --surface-soft: #f8faf7;
@@ -154,7 +154,7 @@
   }
 
   #intake-context-text {
-    color: #536158 !important;
+    color: var(--green-700) !important;
     font-size: .84rem !important;
     line-height: 1.5;
   }
@@ -231,7 +231,7 @@
 
   .input::placeholder,
   .textarea::placeholder {
-    color: #98a39c !important;
+    color: #6b8172 !important;
   }
 
   .input:hover,
@@ -250,7 +250,7 @@
 
   .input[readonly] {
     background: #f1f4f1 !important;
-    color: #516158 !important;
+    color: var(--green-800) !important;
   }
 
   input[type="radio"],
@@ -577,8 +577,35 @@
     color: var(--ink) !important;
   }
 
+  .table td {
+    color: var(--ink) !important;
+  }
+
+  .validator-overview,
+  .validator-overview code,
+  .review-section,
+  .review-list-item,
+  .identity-review-card {
+    color: var(--ink) !important;
+  }
+
+  .review-kicker,
+  .review-row > span,
+  .review-empty,
+  .review-ok,
+  .developer-details summary {
+    color: var(--green-700) !important;
+  }
+
+  .has-text-grey,
+  .has-text-grey-light,
+  .has-text-grey-lighter,
+  .has-text-grey-dark {
+    color: var(--green-700) !important;
+  }
+
   .table th {
-    color: #4d5b53 !important;
+    color: var(--green-800) !important;
     background: #f5f7f5 !important;
   }
 
