@@ -25,14 +25,24 @@ function listPendingSubmissions() {
         }
       }
 
-      const pendingDuplicates = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE'
+      const isNewProfile = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE';
+      const pendingDuplicates = isNewProfile
         ? evaluatePendingSubmissionIdentitySignalsUnlocked_(payload.farmer || {}, row.submission_id)
         : [];
+      const liveIdentitySignals = isNewProfile
+        ? evaluateIdentitySignals_(payload.farmer || {})
+        : { tier: 'NONE', reasons: [], candidateFarmerIds: [] };
       const storedFlags = parseJsonArray_(row.flag_reasons_json);
       const dynamicDuplicateFlags = pendingDuplicates.map(function(match) {
         return 'Possible duplicate pending submission ' + match.submission_id +
           ' (' + match.tier + '): ' + match.reasons.join('; ');
       });
+      if (liveIdentitySignals.tier !== 'NONE') {
+        dynamicDuplicateFlags.push(
+          'Possible existing farmer (' + liveIdentitySignals.tier + '): ' +
+          liveIdentitySignals.reasons.join('; ')
+        );
+      }
 
       return {
         submission_id: row.submission_id,
@@ -41,8 +51,9 @@ function listPendingSubmissions() {
         reference_year: row.reference_year,
         classification: row.classification,
         flags: Array.from(new Set(storedFlags.concat(dynamicDuplicateFlags))),
-        possible_duplicate: pendingDuplicates.length > 0,
+        possible_duplicate: pendingDuplicates.length > 0 || liveIdentitySignals.tier !== 'NONE',
         pending_duplicate_count: pendingDuplicates.length,
+        live_identity_tier: liveIdentitySignals.tier,
         submitted_at: toClientDateTime_(row.submitted_at),
         submitted_by: row.submitted_by,
         subject_name: subjectName
@@ -57,9 +68,14 @@ function getSubmissionForReview(submissionId) {
   const payload = parseSubmissionPayload_(row);
   assertSubmissionScopeForStaff_(staff, row, payload);
 
-  const pendingDuplicateCandidates = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE'
+  const isNewProfile = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE';
+  const pendingDuplicateCandidates = isNewProfile
     ? evaluatePendingSubmissionIdentitySignalsUnlocked_(payload.farmer || {}, submissionId)
     : [];
+  const liveIdentitySignals = isNewProfile
+    ? evaluateIdentitySignals_(payload.farmer || {})
+    : { tier: 'NONE', reasons: [], candidateFarmerIds: [] };
+  const liveIdentityCandidates = buildLiveIdentityCandidatesForValidator_(liveIdentitySignals);
 
   const identityReviews = getIdentityReviewsForSubmission_(submissionId).map(function(review) {
     const candidate = review.candidate_farmer_id
@@ -102,7 +118,10 @@ function getSubmissionForReview(submissionId) {
     },
     payload: payload,
     identity_reviews: identityReviews,
-    pending_duplicate_candidates: pendingDuplicateCandidates
+    pending_duplicate_candidates: pendingDuplicateCandidates,
+    live_identity_tier: liveIdentitySignals.tier,
+    live_identity_reasons: liveIdentitySignals.reasons,
+    live_identity_candidates: liveIdentityCandidates
   };
 }
 
@@ -286,4 +305,25 @@ function toClientDateTime_(value) {
   }
   const parsed = new Date(value);
   return isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+}
+
+
+function buildLiveIdentityCandidatesForValidator_(signals) {
+  if (!signals || !signals.candidateFarmerIds) return [];
+  return signals.candidateFarmerIds.map(function(farmerId) {
+    const candidate = findById_('Farmers', 'farmer_id', farmerId);
+    if (!candidate) return null;
+    return {
+      farmer_id: candidate.farmer_id,
+      rsbsa_no: candidate.rsbsa_no || '',
+      first_name: candidate.first_name || '',
+      middle_name: candidate.middle_name || '',
+      last_name: candidate.last_name || '',
+      suffix: candidate.suffix || '',
+      contact_no: candidate.contact_no || '',
+      alternate_contact_no: candidate.alternate_contact_no || '',
+      residence_barangay_code: candidate.residence_barangay_code || '',
+      record_status: candidate.record_status || ''
+    };
+  }).filter(Boolean);
 }
