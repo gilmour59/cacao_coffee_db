@@ -25,13 +25,24 @@ function listPendingSubmissions() {
         }
       }
 
+      const pendingDuplicates = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE'
+        ? evaluatePendingSubmissionIdentitySignalsUnlocked_(payload.farmer || {}, row.submission_id)
+        : [];
+      const storedFlags = parseJsonArray_(row.flag_reasons_json);
+      const dynamicDuplicateFlags = pendingDuplicates.map(function(match) {
+        return 'Possible duplicate pending submission ' + match.submission_id +
+          ' (' + match.tier + '): ' + match.reasons.join('; ');
+      });
+
       return {
         submission_id: row.submission_id,
         farmer_id: row.farmer_id || '',
         submission_type: row.submission_type,
         reference_year: row.reference_year,
         classification: row.classification,
-        flags: parseJsonArray_(row.flag_reasons_json),
+        flags: Array.from(new Set(storedFlags.concat(dynamicDuplicateFlags))),
+        possible_duplicate: pendingDuplicates.length > 0,
+        pending_duplicate_count: pendingDuplicates.length,
         submitted_at: toClientDateTime_(row.submitted_at),
         submitted_by: row.submitted_by,
         subject_name: subjectName
@@ -45,6 +56,10 @@ function getSubmissionForReview(submissionId) {
   if (!row) throw new Error('Submission not found.');
   const payload = parseSubmissionPayload_(row);
   assertSubmissionScopeForStaff_(staff, row, payload);
+
+  const pendingDuplicateCandidates = String(row.submission_type || '').toUpperCase() === 'NEW_PROFILE'
+    ? evaluatePendingSubmissionIdentitySignalsUnlocked_(payload.farmer || {}, submissionId)
+    : [];
 
   const identityReviews = getIdentityReviewsForSubmission_(submissionId).map(function(review) {
     const candidate = review.candidate_farmer_id
@@ -86,7 +101,8 @@ function getSubmissionForReview(submissionId) {
       submitted_by: row.submitted_by
     },
     payload: payload,
-    identity_reviews: identityReviews
+    identity_reviews: identityReviews,
+    pending_duplicate_candidates: pendingDuplicateCandidates
   };
 }
 
