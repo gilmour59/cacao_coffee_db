@@ -1,6 +1,6 @@
 # HVCP Requirements Decisions
 
-Last updated: 2026-10-03
+Last updated: 2026-10-05
 
 This document records the decisions confirmed from the HVCP requirements questionnaire and follow-up clarifications. It is the business-rule source of truth for the V1 schema unless a later HVCP instruction supersedes it.
 
@@ -17,6 +17,14 @@ This document records the decisions confirmed from the HVCP requirements questio
 - Personalized links may be generated/resend/revoked by Data Administrator, Validator, or authorized Encoder.
 - Link validity runs until the end of the profiling period unless revoked.
 - Returned submissions may either reuse the same secure link or receive a new correction link.
+
+### RSBSA identity safeguards
+- V1 uses manual RSBSA number entry only; RSBSA ID image capture and OCR are not included.
+- Exact RSBSA matches are treated as a strong duplicate signal.
+- Conservative near-match detection flags likely one-character entry errors or adjacent character/digit transpositions for Validator review.
+- Near matches never auto-link or auto-merge farmers.
+- Name/contact/barangay identity signals remain supporting duplicate checks.
+- Final link/create/merge decisions remain controlled by Validator/Data Administrator review.
 
 ### Farmer profile
 - Name is stored as First Name, Middle Name, Last Name, and Suffix.
