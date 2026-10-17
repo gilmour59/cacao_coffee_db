@@ -5,6 +5,7 @@
     invitationContext: null,
     currentMode: 'intake',
     selectedSubmissionId: '',
+    selectedInvitationFarmer: null,
     locations: {
       lgusByProvince: {},
       barangaysByLgu: {}
@@ -62,6 +63,21 @@
       addNeedRow();
     });
 
+    document.getElementById('search-invitation-farmer').addEventListener('click', searchInvitationFarmers);
+    document.getElementById('invitation-farmer-search').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        searchInvitationFarmers();
+      }
+    });
+    document.getElementById('generate-invitation').addEventListener('click', generateProfilingInvitationForSelectedFarmer);
+    document.getElementById('clear-invitation-farmer').addEventListener('click', clearSelectedInvitationFarmer);
+    document.getElementById('select-invitation-url').addEventListener('click', function() {
+      const input = document.getElementById('generated-invitation-url');
+      input.focus();
+      input.select();
+    });
+
     document.getElementById('refresh-validator').addEventListener('click', loadValidatorQueue);
     document.getElementById('approve-submission').addEventListener('click', approveSelectedSubmission);
     document.getElementById('return-submission').addEventListener('click', returnSelectedSubmission);
@@ -103,6 +119,7 @@
     document.getElementById('staff-badge').classList.remove('is-hidden');
     document.getElementById('staff-name').textContent = staff.full_name || staff.email || 'Authorized staff';
     document.getElementById('staff-role').textContent = staff.role || '';
+    document.getElementById('invitation-tab').classList.remove('is-hidden');
 
     if (staff.role === 'ADMIN' || staff.role === 'VALIDATOR') {
       document.getElementById('validator-tab').classList.remove('is-hidden');
@@ -118,10 +135,20 @@
       }
     }
 
+    if (mode === 'invitations') {
+      const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+      if (!staff) {
+        showMessage('Existing farmer profiling links require authorized staff access.', 'is-warning');
+        return;
+      }
+    }
+
     appState.currentMode = mode;
     document.getElementById('intake-view').classList.toggle('is-hidden', mode !== 'intake');
+    document.getElementById('invitation-view').classList.toggle('is-hidden', mode !== 'invitations');
     document.getElementById('validator-view').classList.toggle('is-hidden', mode !== 'validator');
     document.getElementById('intake-tab').classList.toggle('is-active', mode === 'intake');
+    document.getElementById('invitation-tab').classList.toggle('is-active', mode === 'invitations');
     document.getElementById('validator-tab').classList.toggle('is-active', mode === 'validator');
 
     if (mode === 'validator') {
@@ -950,6 +977,196 @@
     const button = document.getElementById('submit-profile');
     button.classList.toggle('is-loading', busy);
     button.disabled = busy;
+  }
+
+  async function searchInvitationFarmers() {
+    const query = cleanValue('invitation-farmer-search');
+    const container = document.getElementById('invitation-search-results');
+
+    if (query.length < 2) {
+      showMessage('Enter at least 2 characters to search approved farmers.', 'is-warning');
+      return;
+    }
+
+    container.classList.remove('is-hidden');
+    container.innerHTML = '<p>Searching…</p>';
+
+    try {
+      const farmers = (await serverCall('searchActiveFarmersForInvitation', query)) || [];
+      if (!farmers.length) {
+        container.innerHTML = '<p class="review-empty">No active farmers matched your search within your authorized scope.</p>';
+        return;
+      }
+
+      container.innerHTML =
+        '<div class="table-container"><table class="table is-fullwidth is-hoverable">' +
+          '<thead><tr><th>Farmer</th><th>Farmer ID</th><th>RSBSA</th><th>Contact</th><th></th></tr></thead>' +
+          '<tbody>' +
+            farmers.map(function(farmer, index) {
+              return '<tr>' +
+                '<td>' + escapeHtml(fullName(farmer) || '—') + '</td>' +
+                '<td><code>' + escapeHtml(farmer.farmer_id || '') + '</code></td>' +
+                '<td>' + escapeHtml(farmer.rsbsa_no || '—') + '</td>' +
+                '<td>' + escapeHtml(farmer.contact_no || '—') + '</td>' +
+                '<td><button type="button" class="button is-small is-link is-light select-invitation-farmer" data-index="' + index + '">Select</button></td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table></div>';
+
+      container.querySelectorAll('.select-invitation-farmer').forEach(function(button) {
+        button.addEventListener('click', function() {
+          const farmer = farmers[Number(button.dataset.index)];
+          selectInvitationFarmer(farmer);
+        });
+      });
+    } catch (error) {
+      handleServerError(error);
+      container.innerHTML = '<p class="has-text-danger">Unable to search farmers.</p>';
+    }
+  }
+
+  async function selectInvitationFarmer(farmer) {
+    appState.selectedInvitationFarmer = farmer || null;
+    if (!farmer) return;
+
+    document.getElementById('invitation-search-results').classList.add('is-hidden');
+    document.getElementById('invitation-selected-farmer').classList.remove('is-hidden');
+    document.getElementById('generated-invitation-panel').classList.add('is-hidden');
+
+    document.getElementById('invitation-reference-year').value =
+      (appState.bootstrap && appState.bootstrap.app && appState.bootstrap.app.currentYear) ||
+      new Date().getFullYear();
+
+    document.getElementById('invitation-farmer-summary').innerHTML =
+      '<div class="validator-overview">' +
+        '<div><span class="review-kicker">Farmer</span><strong>' + escapeHtml(fullName(farmer) || '—') + '</strong></div>' +
+        '<div><span class="review-kicker">Farmer ID</span><code>' + escapeHtml(farmer.farmer_id || '') + '</code></div>' +
+        '<div><span class="review-kicker">RSBSA</span>' + escapeHtml(farmer.rsbsa_no || 'Not registered / none') + '</div>' +
+        '<div><span class="review-kicker">Contact</span>' + escapeHtml(farmer.contact_no || '—') + '</div>' +
+      '</div>';
+
+    const farmSelect = document.getElementById('invitation-farm');
+    farmSelect.innerHTML = '<option value="">All / choose during profiling</option>';
+    (farmer.farms || []).forEach(function(farm) {
+      const option = document.createElement('option');
+      option.value = farm.farm_id || '';
+      option.textContent = [
+        farm.farm_name_local_id || farm.farm_id,
+        farm.farm_address
+      ].filter(Boolean).join(' — ');
+      farmSelect.appendChild(option);
+    });
+
+    await loadInvitationHistory(farmer.farmer_id);
+  }
+
+  function clearSelectedInvitationFarmer() {
+    appState.selectedInvitationFarmer = null;
+    document.getElementById('invitation-selected-farmer').classList.add('is-hidden');
+    document.getElementById('generated-invitation-panel').classList.add('is-hidden');
+    document.getElementById('invitation-farmer-search').value = '';
+    document.getElementById('invitation-search-results').innerHTML = '';
+    document.getElementById('invitation-search-results').classList.add('is-hidden');
+    document.getElementById('invitation-farmer-search').focus();
+  }
+
+  async function generateProfilingInvitationForSelectedFarmer() {
+    const farmer = appState.selectedInvitationFarmer;
+    if (!farmer || !farmer.farmer_id) {
+      showMessage('Select an approved farmer first.', 'is-warning');
+      return;
+    }
+
+    const year = Number(cleanValue('invitation-reference-year'));
+    const purpose = cleanValue('invitation-purpose');
+    const farmId = cleanValue('invitation-farm');
+    const expiry = cleanValue('invitation-expiry');
+    const button = document.getElementById('generate-invitation');
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      showMessage('Enter a valid reference year.', 'is-warning');
+      return;
+    }
+
+    button.disabled = true;
+    button.classList.add('is-loading');
+
+    try {
+      const result = await serverCall(
+        'createProfilingInvitation',
+        farmer.farmer_id,
+        year,
+        purpose,
+        farmId,
+        expiry
+      );
+
+      const urlInput = document.getElementById('generated-invitation-url');
+      urlInput.value = result.url || ('Token: ' + (result.token || ''));
+
+      document.getElementById('generated-invitation-panel').classList.remove('is-hidden');
+      showMessage('Secure profiling link generated.', 'is-success');
+      await loadInvitationHistory(farmer.farmer_id);
+    } catch (error) {
+      handleServerError(error);
+    } finally {
+      button.disabled = false;
+      button.classList.remove('is-loading');
+    }
+  }
+
+  async function loadInvitationHistory(farmerId) {
+    const body = document.getElementById('invitation-history-body');
+    body.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+
+    try {
+      const rows = (await serverCall('listProfilingInvitationsForFarmer', farmerId)) || [];
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="7">No invitations yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rows.map(function(row) {
+        const canRevoke = ['ACTIVE','RETURNED'].indexOf(String(row.status || '').toUpperCase()) !== -1;
+        return '<tr>' +
+          '<td><code>' + escapeHtml(row.invitation_id || '') + '</code></td>' +
+          '<td>' + escapeHtml(prettyCode(row.purpose || '')) + '</td>' +
+          '<td>' + escapeHtml(String(row.reference_year || '')) + '</td>' +
+          '<td>' + escapeHtml(row.farm_id || 'All / unspecified') + '</td>' +
+          '<td>' + escapeHtml(prettyCode(row.status || '')) + '</td>' +
+          '<td>' + escapeHtml(formatDateTime(row.created_at)) + '</td>' +
+          '<td>' + (canRevoke
+            ? '<button type="button" class="button is-small is-danger is-light revoke-invitation" data-id="' + escapeAttr(row.invitation_id || '') + '">Revoke</button>'
+            : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      body.querySelectorAll('.revoke-invitation').forEach(function(button) {
+        button.addEventListener('click', async function() {
+          const invitationId = String(button.dataset.id || '');
+          if (!invitationId) return;
+
+          const confirmed = window.confirm('Revoke ' + invitationId + '? The link will no longer be usable.');
+          if (!confirmed) return;
+
+          button.disabled = true;
+          button.classList.add('is-loading');
+          try {
+            await serverCall('revokeProfilingInvitation', invitationId);
+            showMessage(invitationId + ' revoked.', 'is-success');
+            await loadInvitationHistory(farmerId);
+          } catch (error) {
+            handleServerError(error);
+            button.disabled = false;
+            button.classList.remove('is-loading');
+          }
+        });
+      });
+    } catch (error) {
+      handleServerError(error);
+      body.innerHTML = '<tr><td colspan="7" class="has-text-danger">Unable to load invitation history.</td></tr>';
+    }
   }
 
   async function loadValidatorQueue() {
