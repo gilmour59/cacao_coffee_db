@@ -5,6 +5,93 @@ const INVITATION_PURPOSES = Object.freeze({
   NEW_FARM: 'NEW_FARM'
 });
 
+
+function searchActiveFarmersForInvitation(query) {
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
+  const needle = cleanText_(query).toLowerCase();
+  if (needle.length < 2) return [];
+
+  return getRowsAsObjects_('Farmers')
+    .filter(function(farmer) {
+      if (String(farmer.record_status || '').toUpperCase() !== 'ACTIVE') return false;
+
+      try {
+        assertStaffGeographicScope_(staff, farmer.residence_province_code, farmer.residence_lgu_code);
+      } catch (error) {
+        return false;
+      }
+
+      const haystack = [
+        farmer.farmer_id,
+        farmer.rsbsa_no,
+        farmer.first_name,
+        farmer.middle_name,
+        farmer.last_name,
+        farmer.suffix,
+        farmer.contact_no
+      ].map(function(value) {
+        return cleanText_(value).toLowerCase();
+      }).join(' ');
+
+      return haystack.indexOf(needle) !== -1;
+    })
+    .slice(0, 20)
+    .map(function(farmer) {
+      const farms = findRowsByField_('Farms', 'farmer_id', farmer.farmer_id)
+        .filter(function(farm) {
+          return String(farm.record_status || '').toUpperCase() === 'ACTIVE';
+        })
+        .map(function(farm) {
+          return {
+            farm_id: farm.farm_id,
+            farm_name_local_id: farm.farm_name_local_id || '',
+            farm_address: farm.farm_address || '',
+            barangay_code: farm.barangay_code || ''
+          };
+        });
+
+      return {
+        farmer_id: farmer.farmer_id,
+        rsbsa_no: farmer.rsbsa_no || '',
+        first_name: farmer.first_name || '',
+        middle_name: farmer.middle_name || '',
+        last_name: farmer.last_name || '',
+        suffix: farmer.suffix || '',
+        contact_no: farmer.contact_no || '',
+        residence_barangay_code: farmer.residence_barangay_code || '',
+        farms: farms
+      };
+    });
+}
+
+function listProfilingInvitationsForFarmer(farmerId) {
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
+  const farmer = findById_('Farmers', 'farmer_id', farmerId);
+  if (!farmer) throw new Error('Farmer not found.');
+
+  assertStaffGeographicScope_(staff, farmer.residence_province_code, farmer.residence_lgu_code);
+
+  return findRowsByField_('Profiling_Invitations', 'farmer_id', farmerId)
+    .sort(function(a, b) {
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    })
+    .slice(0, 20)
+    .map(function(invitation) {
+      return {
+        invitation_id: invitation.invitation_id,
+        farmer_id: invitation.farmer_id,
+        farm_id: invitation.farm_id || '',
+        reference_year: invitation.reference_year,
+        purpose: invitation.purpose,
+        status: invitation.status,
+        expires_at: toClientDateTime_(invitation.expires_at),
+        created_at: toClientDateTime_(invitation.created_at),
+        submitted_at: toClientDateTime_(invitation.submitted_at),
+        revoked_at: toClientDateTime_(invitation.revoked_at)
+      };
+    });
+}
+
 function createProfilingInvitation(farmerId, referenceYear, purpose, farmId, expiresAt) {
   const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
   const farmer = findById_('Farmers', 'farmer_id', farmerId);
@@ -183,9 +270,18 @@ function markInvitationReturnedUnlocked_(invitationId) {
 }
 
 function revokeProfilingInvitation(invitationId) {
-  requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
+  const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
   const invitation = findById_('Profiling_Invitations', 'invitation_id', invitationId);
   if (!invitation) throw new Error('Invitation not found.');
+
+  const farmer = findById_('Farmers', 'farmer_id', invitation.farmer_id);
+  if (!farmer) throw new Error('Farmer not found.');
+  assertStaffGeographicScope_(staff, farmer.residence_province_code, farmer.residence_lgu_code);
+
+  const status = String(invitation.status || '').toUpperCase();
+  if (status === 'REVOKED') {
+    return { ok: true, invitation_id: invitationId, status: 'REVOKED' };
+  }
 
   const updated = patchObjectRowByField_('Profiling_Invitations', 'invitation_id', invitationId, {
     status: 'REVOKED',
