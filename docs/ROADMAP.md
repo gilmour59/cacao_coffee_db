@@ -36,7 +36,8 @@ The project follows a TEST → UAT → HVCP Production workflow.
 - [x] Implement Profiling_Invitations.
 - [x] Implement secure random token generation + token-hash lookup.
 - [x] Implement ACTIVE / SUBMITTED / RETURNED / EXPIRED / REVOKED invitation states.
-- [ ] Implement staff link generation/resend/revoke actions.
+- [x] Implement staff farmer search + link generation/list/revoke actions.
+- [ ] Finalize explicit resend/regenerate UX/policy.
 - [ ] Implement Encoder-assisted intake path.
 - [x] Implement farm registration, PSGC cascading dropdowns, and approximate map pin.
 
