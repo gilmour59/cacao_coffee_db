@@ -12,6 +12,7 @@
     map: null,
     marker: null,
     submissionCompleted: false,
+    validatorActionBusy: false,
     toastTimer: null
   };
 
@@ -1009,6 +1010,7 @@
   }
 
   function renderValidatorReview(review) {
+    setValidatorActionBusy(false);
     const submission = review.submission || {};
     const payload = review.payload || {};
     const flags = Array.isArray(submission.flags) ? submission.flags : [];
@@ -1176,7 +1178,7 @@
 
       if (duplicateButton) {
         duplicateButton.addEventListener('click', async function() {
-          if (!appState.selectedSubmissionId) return;
+          if (!appState.selectedSubmissionId || appState.validatorActionBusy) return;
 
           const confirmed = window.confirm(
             'Mark ' + candidateSubmissionId +
@@ -1185,7 +1187,7 @@
           );
           if (!confirmed) return;
 
-          duplicateButton.classList.add('is-loading');
+          setValidatorActionBusy(true, duplicateButton);
           try {
             await serverCall(
               'voidSubmission',
@@ -1199,14 +1201,14 @@
             await loadValidatorQueue();
           } catch (error) {
             handleServerError(error);
-          } finally {
-            duplicateButton.classList.remove('is-loading');
+            setValidatorActionBusy(false);
           }
         });
       }
 
       if (spamButton) {
         spamButton.addEventListener('click', async function() {
+          if (appState.validatorActionBusy) return;
           const reason = spamReason ? spamReason.value.trim() : '';
           if (!reason) {
             showMessage('Enter the spam/invalid reason on the candidate card first.', 'is-warning');
@@ -1219,7 +1221,7 @@
           );
           if (!confirmed) return;
 
-          spamButton.classList.add('is-loading');
+          setValidatorActionBusy(true, spamButton);
           try {
             await serverCall(
               'voidSubmission',
@@ -1233,8 +1235,7 @@
             await loadValidatorQueue();
           } catch (error) {
             handleServerError(error);
-          } finally {
-            spamButton.classList.remove('is-loading');
+            setValidatorActionBusy(false);
           }
         });
       }
@@ -1550,12 +1551,13 @@
         select.value = review.resolution || '';
       } else {
         button.addEventListener('click', async function() {
+          if (appState.validatorActionBusy) return;
           if (!select.value) {
             showMessage('Select an identity-review resolution first.', 'is-warning');
             return;
           }
 
-          button.classList.add('is-loading');
+          setValidatorActionBusy(true, button);
           try {
             await serverCall(
               'resolveIdentityReview',
@@ -1567,8 +1569,7 @@
             await openSubmissionReview(appState.selectedSubmissionId);
           } catch (error) {
             handleServerError(error);
-          } finally {
-            button.classList.remove('is-loading');
+            setValidatorActionBusy(false);
           }
         });
       }
@@ -1578,7 +1579,7 @@
   }
 
   async function voidSelectedSubmissionAsDuplicate() {
-    if (!appState.selectedSubmissionId) return;
+    if (!appState.selectedSubmissionId || appState.validatorActionBusy) return;
 
     const duplicateReference = cleanValue('duplicate-reference');
     if (!duplicateReference) {
@@ -1588,7 +1589,7 @@
     }
 
     const button = document.getElementById('duplicate-submission');
-    button.classList.add('is-loading');
+    setValidatorActionBusy(true, button);
 
     try {
       await serverCall(
@@ -1604,13 +1605,12 @@
       await loadValidatorQueue();
     } catch (error) {
       handleServerError(error);
-    } finally {
-      button.classList.remove('is-loading');
+      setValidatorActionBusy(false);
     }
   }
 
   async function voidSelectedSubmissionAsSpam() {
-    if (!appState.selectedSubmissionId) return;
+    if (!appState.selectedSubmissionId || appState.validatorActionBusy) return;
 
     const remarks = document.getElementById('validator-remarks').value.trim();
     if (!remarks) {
@@ -1620,7 +1620,7 @@
     }
 
     const button = document.getElementById('spam-submission');
-    button.classList.add('is-loading');
+    setValidatorActionBusy(true, button);
 
     try {
       await serverCall(
@@ -1636,16 +1636,15 @@
       await loadValidatorQueue();
     } catch (error) {
       handleServerError(error);
-    } finally {
-      button.classList.remove('is-loading');
+      setValidatorActionBusy(false);
     }
   }
 
   async function approveSelectedSubmission() {
-    if (!appState.selectedSubmissionId) return;
+    if (!appState.selectedSubmissionId || appState.validatorActionBusy) return;
 
     const button = document.getElementById('approve-submission');
-    button.classList.add('is-loading');
+    setValidatorActionBusy(true, button);
 
     try {
       const result = await serverCall(
@@ -1659,13 +1658,12 @@
       await loadValidatorQueue();
     } catch (error) {
       handleServerError(error);
-    } finally {
-      button.classList.remove('is-loading');
+      setValidatorActionBusy(false);
     }
   }
 
   async function returnSelectedSubmission() {
-    if (!appState.selectedSubmissionId) return;
+    if (!appState.selectedSubmissionId || appState.validatorActionBusy) return;
 
     const remarks = document.getElementById('validator-remarks').value.trim();
     if (!remarks) {
@@ -1674,7 +1672,7 @@
     }
 
     const button = document.getElementById('return-submission');
-    button.classList.add('is-loading');
+    setValidatorActionBusy(true, button);
 
     try {
       await serverCall('returnSubmission', appState.selectedSubmissionId, remarks);
@@ -1684,8 +1682,33 @@
       await loadValidatorQueue();
     } catch (error) {
       handleServerError(error);
-    } finally {
-      button.classList.remove('is-loading');
+      setValidatorActionBusy(false);
+    }
+  }
+
+  function setValidatorActionBusy(busy, loadingButton) {
+    const panel = document.getElementById('validator-review-panel');
+    appState.validatorActionBusy = Boolean(busy);
+    if (!panel) return;
+
+    panel.querySelectorAll('button').forEach(function(button) {
+      if (busy) {
+        if (button.dataset.validatorLockWasDisabled === undefined) {
+          button.dataset.validatorLockWasDisabled = button.disabled ? '1' : '0';
+        }
+        button.disabled = true;
+      } else if (button.dataset.validatorLockWasDisabled !== undefined) {
+        button.disabled = button.dataset.validatorLockWasDisabled === '1';
+        delete button.dataset.validatorLockWasDisabled;
+      }
+
+      if (!busy || button !== loadingButton) {
+        button.classList.remove('is-loading');
+      }
+    });
+
+    if (busy && loadingButton) {
+      loadingButton.classList.add('is-loading');
     }
   }
 
