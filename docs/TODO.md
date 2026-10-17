@@ -24,7 +24,8 @@ In progress now:
 - [x] Complete first new-farmer vertical-slice smoke test: submit, detect/void duplicates, approve one, return one, verify canonical materialization and Audit_Log.
 - [ ] Run exact/near-duplicate RSBSA tests.
 - [ ] Test existing-farmer secure-link flow: annual profile, same-year correction, same-year expansion, new farm, and new-year round.
-- [ ] Add staff-facing invitation generation/search/resend/revoke workflow.
+- [x] Add staff-facing approved-farmer search + invitation generation/list/revoke workflow.
+- [ ] Add explicit resend/regenerate UX if HVCP wants it; raw invitation tokens are intentionally not stored.
 - [ ] Prepare flattened reporting views and Looker Studio dashboard.
 - [ ] Extend browser UI from one farm to multiple farms if still required for the Oct 22 demo.
 - [ ] Add public endpoint rate/abuse protection.
@@ -169,15 +170,15 @@ In progress now:
 
 ## F. Existing farmer secure-link profiling
 
-- [ ] Staff search/select approved existing farmer.
-- [ ] Generate personalized profiling invitation.
-- [ ] Link invitation to farmer_id + reference period + purpose.
+- [x] Staff search/select approved existing farmer.
+- [x] Generate personalized profiling invitation.
+- [x] Link invitation to farmer_id + reference period + purpose.
 - [ ] Purpose support: ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, NEW_FARM.
 - [x] Store token hash rather than raw token where practical.
 - [x] Support ACTIVE, SUBMITTED, RETURNED, EXPIRED, REVOKED statuses.
 - [ ] Allow safe resume while ACTIVE.
 - [ ] Lock/invalidate after final submission.
-- [ ] Staff can resend/revoke/regenerate according to HVCP-approved policy.
+- [ ] Staff can revoke existing links; explicit resend/regenerate policy/UX remains to be finalized.
 - [x] Existing farmer link loads only the permitted farmer/profile context.
 - [x] No username/password required for farmer V1.
 - [ ] Encoder-assisted path available when farmer cannot use the link.
