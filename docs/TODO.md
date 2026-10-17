@@ -1,8 +1,8 @@
 # Project TODO
 
-## Current status — 2026-10-05
+## Current status — 2026-10-17
 
-**Active milestone:** TEST smoke testing of the first end-to-end single-farm vertical slice.
+**Active milestone:** Existing-farmer secure-link flow, reporting, and UAT after completing the first end-to-end new-farmer vertical slice.
 
 Completed/working in TEST:
 - [x] TEST Google Sheet, Apps Script project, Script Properties, local clasp mapping, and push workflow.
@@ -14,21 +14,21 @@ Completed/working in TEST:
 - [x] Human-readable Farmer review and Validator review; raw payload is TEST Admin/developer-only.
 - [x] Validator Queue, Approve, Return, and Identity Review UI/backend are implemented.
 - [x] Validator can void duplicate/spam submissions without hard-deleting the audit trail.
+- [x] Validator actions are client-locked while a request is in flight; backend transitions still require `PENDING` under `LockService`.
 - [x] Canonical materialization services for Farmer, Farm, Profiling Round, Planting/Observation, Production, Facilities, Interventions, and Needs are implemented.
 - [x] Change classification service exists for NEW_ENTRY, NO_CHANGE, MODIFICATION, EXPANSION, and ANOMALY.
 - [x] Secure invitation backend exists for ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, and NEW_FARM.
 - [x] PSGC pilot references loaded for Iloilo → Pototan → 50 barangays.
 
 In progress now:
-- [ ] Finish Smoke Test #12: approve `SUB-2026-000001` and verify canonical rows + Audit_Log.
-- [ ] Run Return-for-Correction smoke test.
+- [x] Complete first new-farmer vertical-slice smoke test: submit, detect/void duplicates, approve one, return one, verify canonical materialization and Audit_Log.
 - [ ] Run exact/near-duplicate RSBSA tests.
-- [ ] Test existing-farmer secure-link flow: annual profile, same-year correction, same-year expansion, and new-year round.
-- [ ] Extend browser UI from one farm to multiple farms.
-- [ ] Add staff-facing invitation generation/search/resend workflow.
+- [ ] Test existing-farmer secure-link flow: annual profile, same-year correction, same-year expansion, new farm, and new-year round.
+- [ ] Add staff-facing invitation generation/search/resend/revoke workflow.
+- [ ] Prepare flattened reporting views and Looker Studio dashboard.
+- [ ] Extend browser UI from one farm to multiple farms if still required for the Oct 22 demo.
 - [ ] Add public endpoint rate/abuse protection.
-- [ ] Prepare reporting/Looker Studio views.
-- [ ] Run role-isolation, mobile, concurrency, and security UAT.
+- [ ] Run role-isolation, mobile, concurrency, slow-network, and security UAT.
 - [ ] Prepare PROD resources under HVCP ownership.
 
 
@@ -108,7 +108,7 @@ In progress now:
 - [x] Add append-only audit events for critical workflow actions.
 - [x] Wire the browser UI to the new staged-submission APIs for the first single-farm vertical slice.
 - [x] Build Validator UI for pending review, identity-resolution, Approve, and Return.
-- [ ] Run Apps Script TEST deployment smoke tests against the new schema.
+- [x] Run first Apps Script TEST deployment vertical-slice smoke test against the new schema; existing-farmer and security scenarios remain.
 - [ ] Extend the UI from the first single-farm vertical slice to add/manage multiple farms in one farmer profiling cycle.
 - [ ] Add public-endpoint rate/abuse protection before production deployment.
 - [x] Load the initial official PSGC pilot references: Iloilo → Pototan → 50 barangays.
@@ -255,7 +255,7 @@ In progress now:
 
 ## K. Testing
 
-- [ ] New-farmer public intake.
+- [x] New-farmer public intake.
 - [ ] Existing-farmer secure invitation.
 - [ ] Invalid/expired/revoked token.
 - [ ] Token tampering / guessed IDs.
@@ -272,7 +272,7 @@ In progress now:
 - [ ] Encoder-assisted submission audit.
 - [ ] Concurrent submissions/link actions.
 - [ ] Mobile Android.
-- [ ] Desktop.
+- [x] Desktop smoke test for the first vertical slice.
 - [ ] Slow network.
 - [ ] Invalid/blank inputs.
 - [ ] Manual RSBSA entry and typo/transposition duplicate-detection tests.
