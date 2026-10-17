@@ -36,6 +36,7 @@
         <div id="mode-tabs" class="tabs is-boxed mb-5">
           <ul>
             <li id="intake-tab" class="is-active"><a data-mode="intake">Profiling Form</a></li>
+            <li id="invitation-tab" class="is-hidden"><a data-mode="invitations">Existing Farmer Links</a></li>
             <li id="validator-tab" class="is-hidden"><a data-mode="validator">Validator Queue</a></li>
           </ul>
         </div>
@@ -181,6 +182,92 @@
               <div id="review-summary" class="review-summary is-hidden"></div>
             </div>
           </form>
+        </section>
+
+        <section id="invitation-view" class="is-hidden">
+          <div class="box form-section">
+            <h2 class="title is-5 mb-2">Existing Farmer Profiling Links</h2>
+            <p class="mb-4">Search an approved farmer, choose the profiling purpose, and generate a personalized secure link.</p>
+
+            <div class="field">
+              <label class="label" for="invitation-farmer-search">Search Farmer</label>
+              <div class="field has-addons">
+                <div class="control is-expanded">
+                  <input id="invitation-farmer-search" class="input" type="search" placeholder="Farmer ID, RSBSA, name, or contact number">
+                </div>
+                <div class="control">
+                  <button id="search-invitation-farmer" class="button is-primary" type="button">Search</button>
+                </div>
+              </div>
+              <p class="help">Enter at least 2 characters. Results are limited to farmers within your authorized geographic scope.</p>
+            </div>
+
+            <div id="invitation-search-results" class="is-hidden mb-5"></div>
+
+            <div id="invitation-selected-farmer" class="is-hidden">
+              <hr>
+              <h3 class="title is-6">Selected Farmer</h3>
+              <div id="invitation-farmer-summary" class="review-summary mb-4"></div>
+
+              <div class="columns is-multiline">
+                <div class="column is-3">
+                  <label class="label" for="invitation-reference-year">Reference Year</label>
+                  <input id="invitation-reference-year" class="input" type="number" min="2000" max="2100">
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-purpose">Purpose</label>
+                  <div class="select is-fullwidth">
+                    <select id="invitation-purpose">
+                      <option value="ANNUAL_PROFILE">Annual Profile</option>
+                      <option value="EXPANSION_UPDATE">Expansion Update</option>
+                      <option value="CORRECTION">Correction</option>
+                      <option value="NEW_FARM">New Farm</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-farm">Farm</label>
+                  <div class="select is-fullwidth">
+                    <select id="invitation-farm">
+                      <option value="">All / choose during profiling</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-expiry">Expiry (optional)</label>
+                  <input id="invitation-expiry" class="input" type="date">
+                </div>
+              </div>
+
+              <div class="buttons">
+                <button id="generate-invitation" class="button is-primary" type="button">Generate Secure Link</button>
+                <button id="clear-invitation-farmer" class="button is-light action-secondary" type="button">Choose Another Farmer</button>
+              </div>
+
+              <div id="generated-invitation-panel" class="notification is-success is-light is-hidden">
+                <p class="has-text-weight-semibold mb-2">Secure profiling link generated</p>
+                <div class="field has-addons">
+                  <div class="control is-expanded">
+                    <input id="generated-invitation-url" class="input" type="text" readonly>
+                  </div>
+                  <div class="control">
+                    <button id="select-invitation-url" class="button is-light" type="button">Select Link</button>
+                  </div>
+                </div>
+                <p class="help">The raw token is shown only when the link is generated. Store/share the link through the approved staff channel.</p>
+              </div>
+
+              <h3 class="title is-6 mt-5">Recent Invitations</h3>
+              <div class="table-container">
+                <table class="table is-fullwidth is-hoverable">
+                  <thead><tr><th>Invitation</th><th>Purpose</th><th>Year</th><th>Farm</th><th>Status</th><th>Created</th><th></th></tr></thead>
+                  <tbody id="invitation-history-body">
+                    <tr><td colspan="7">Select a farmer to load invitations.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="validator-view" class="is-hidden">
