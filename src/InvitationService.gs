@@ -141,10 +141,12 @@ function createProfilingInvitation(farmerId, referenceYear, purpose, farmId, exp
     purpose: normalizedPurpose
   });
 
-  let baseUrl = '';
-  try {
-    baseUrl = ScriptApp.getService().getUrl() || '';
-  } catch (error) {}
+  let baseUrl = PropertiesService.getScriptProperties().getProperty('FARMER_WEB_APP_URL') || '';
+  if (!baseUrl) {
+    try {
+      baseUrl = ScriptApp.getService().getUrl() || '';
+    } catch (error) {}
+  }
 
   return {
     invitation_id: invitation.invitation_id,

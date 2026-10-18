@@ -33,7 +33,7 @@
         .withSuccessHandler(resolve)
         .withFailureHandler(reject);
 
-      runner[functionName].apply(runner, args);
+      runner.bridgeCall(functionName, args);
     });
   }
 

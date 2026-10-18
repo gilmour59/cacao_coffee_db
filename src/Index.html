@@ -25,6 +25,12 @@
         </div>
       </div>
 
+      <? if (environment === 'TEST') { ?>
+      <div class="notification is-warning is-light" role="note">
+        <strong>Demo and testing version.</strong> This app is still being tested. Information entered here is not an official farmer submission. Please do not enter real personal or farm details during the demo unless project staff invite you to participate in a supervised test.
+      </div>
+      <? } ?>
+
       <div id="app-message" class="notification app-toast is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <div id="loading-state" class="box">
