@@ -44,12 +44,15 @@ function dashboardContext(authorized = true) {
   };
   const context = {
     testRows: rows,
+    databaseOpens: 0,
+    sheetReads: {},
     STAFF_ROLES: { ADMIN: 'ADMIN', VALIDATOR: 'VALIDATOR', ENCODER: 'ENCODER' },
     requireStaffRole_: () => {
       if (!authorized) throw new Error('Authorized staff access is required.');
       return { province_code: '603000000', lgu_code: '603037000' };
     },
-    getRowsAsObjects_: name => rows[name] || [],
+    getDatabase_: () => { context.databaseOpens++; return {}; },
+    getRowsAsObjects_: name => { context.sheetReads[name] = (context.sheetReads[name] || 0) + 1; return rows[name] || []; },
     assertStaffGeographicScope_: (staff, province, lgu) => {
       if (province !== staff.province_code || lgu !== staff.lgu_code) throw new Error('Outside scope');
     },
@@ -75,6 +78,13 @@ test('dashboard counts latest approved scoped records and keeps pending separate
   assert.equal(data.needs[0].farmerCount, 1);
   assert.equal(data.trend.find(row => row.year === 2025).productionKg, 50);
   assert.ok(!JSON.stringify(data).includes('F1'));
+});
+
+test('dashboard opens the spreadsheet once and reads each sheet once per refresh', () => {
+  const context = dashboardContext();
+  context.getDashboardData(2026);
+  assert.equal(context.databaseOpens, 1);
+  assert.ok(Object.values(context.sheetReads).every(count => count === 1));
 });
 
 test('dashboard rejects unauthorized callers and invalid years', () => {

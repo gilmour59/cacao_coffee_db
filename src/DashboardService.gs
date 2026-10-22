@@ -1,5 +1,11 @@
 function getDashboardData(referenceYear, geography) {
   const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
+  const database = getDatabase_();
+  const rowsBySheet = {};
+  function dashboardRows(name) {
+    if (!Object.prototype.hasOwnProperty.call(rowsBySheet, name)) rowsBySheet[name] = getRowsAsObjects_(name, database);
+    return rowsBySheet[name];
+  }
   const year = Number(referenceYear);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     throw new Error('Select a valid reference year.');
@@ -15,15 +21,15 @@ function getDashboardData(referenceYear, geography) {
   if ([province, lgu, barangay].some(function(code) { return code && !/^\d{9,10}$/.test(code); })) {
     throw new Error('Invalid geography filter.');
   }
-  const lgus = getRowsAsObjects_('Ref_LGUs').filter(function(row) {
+  const lgus = dashboardRows('Ref_LGUs').filter(function(row) {
     return String(row.is_active).toUpperCase() !== 'FALSE' && inScope(row.province_code, row.lgu_code);
   });
-  const provinces = getRowsAsObjects_('Ref_Provinces').filter(function(row) {
+  const provinces = dashboardRows('Ref_Provinces').filter(function(row) {
     return String(row.is_active).toUpperCase() !== 'FALSE' && lgus.some(function(l) {
       return code(l.province_code) === code(row.province_code);
     });
   });
-  const barangays = getRowsAsObjects_('Ref_Barangays').filter(function(row) {
+  const barangays = dashboardRows('Ref_Barangays').filter(function(row) {
     return String(row.is_active).toUpperCase() !== 'FALSE' && lgus.some(function(l) {
       return code(l.lgu_code) === code(row.lgu_code) && code(l.province_code) === code(row.province_code);
     });
@@ -50,13 +56,13 @@ function getDashboardData(referenceYear, geography) {
   }
 
   const farmers = {};
-  getRowsAsObjects_('Farmers').forEach(function(row) {
+  dashboardRows('Farmers').forEach(function(row) {
     if (String(row.record_status || '').toUpperCase() !== 'ACTIVE') return;
     farmers[row.farmer_id] = row;
   });
 
   const farms = {};
-  getRowsAsObjects_('Farms').forEach(function(row) {
+  dashboardRows('Farms').forEach(function(row) {
     if (String(row.record_status || '').toUpperCase() !== 'ACTIVE') return;
     if (!farmers[row.farmer_id] || !inScope(row.province_code, row.lgu_code) || !matches(row)) return;
     farms[row.farm_id] = row;
@@ -64,7 +70,7 @@ function getDashboardData(referenceYear, geography) {
 
   // Latest approved round is the current snapshot for a farm and year; earlier corrections must not double count.
   const latest = {};
-  getRowsAsObjects_('Profiling_Rounds').forEach(function(row) {
+  dashboardRows('Profiling_Rounds').forEach(function(row) {
     if (String(row.status || '').toUpperCase() !== 'APPROVED' || !farms[row.farm_id]) return;
     if (!farmers[row.farmer_id] || farms[row.farm_id].farmer_id !== row.farmer_id) return;
     const key = row.farm_id + ':' + row.reference_year;
@@ -75,7 +81,7 @@ function getDashboardData(referenceYear, geography) {
   });
 
   const allRounds = Object.keys(latest).map(function(key) { return latest[key]; });
-  const observations = getRowsAsObjects_('Planting_Observations');
+  const observations = dashboardRows('Planting_Observations');
   const roundsWithCrop = new Set(observations.filter(function(row) {
     return String(row.commodity_code || '').toUpperCase() === commodity;
   }).map(function(row) { return row.profiling_round_id; }));
@@ -92,7 +98,7 @@ function getDashboardData(referenceYear, geography) {
   selectedRounds.forEach(function(row) { selectedFarmIds[row.farm_id] = true; });
   function countsByCode(sheetName, codeField, selected) {
     const counts = {};
-    getRowsAsObjects_(sheetName).forEach(function(row) {
+    dashboardRows(sheetName).forEach(function(row) {
       if (!selected(row)) return;
       const code = String(row[codeField] || 'UNKNOWN');
       counts[code] = (counts[code] || 0) + 1;
@@ -101,7 +107,7 @@ function getDashboardData(referenceYear, geography) {
   }
   function namedCounts(counts, referenceSheet, codeField, nameField) {
     const names = {};
-    getRowsAsObjects_(referenceSheet).forEach(function(row) { names[row[codeField]] = row[nameField]; });
+    dashboardRows(referenceSheet).forEach(function(row) { names[row[codeField]] = row[nameField]; });
     return Object.keys(counts).map(function(code) { return { name: names[code] || code, count: counts[code] }; })
       .sort(function(a, b) { return b.count - a.count; });
   }
@@ -119,7 +125,7 @@ function getDashboardData(referenceYear, geography) {
     return selectedFarmIds[row.farm_id] && (row.is_primary === true || String(row.is_primary).toUpperCase() === 'TRUE');
   });
   const varietyFarms = {};
-  getRowsAsObjects_('Plantings').forEach(function(row) {
+  dashboardRows('Plantings').forEach(function(row) {
     if (!selectedFarmIds[row.farm_id] || String(row.record_status).toUpperCase() !== 'ACTIVE') return;
     if (commodity && String(row.commodity_code).toUpperCase() !== commodity) return;
     const code = String(row.variety_code || 'UNKNOWN');
@@ -171,7 +177,7 @@ function getDashboardData(referenceYear, geography) {
   const productionByBarangay = {};
   const productionByFarm = {};
   const farmsWithProduction = {};
-  getRowsAsObjects_('Production').forEach(function(row) {
+  dashboardRows('Production').forEach(function(row) {
     const round = roundById[row.profiling_round_id];
     if (!round) return;
     const group = commodities[String(row.commodity_code || '').toUpperCase()];
@@ -199,7 +205,7 @@ function getDashboardData(referenceYear, geography) {
   const priorityCounts = {};
   const selectedSubmissions = {};
   selectedRounds.forEach(function(row) { selectedSubmissions[row.submission_id] = row.farmer_id; });
-  getRowsAsObjects_('Intervention_Needs').forEach(function(row) {
+  dashboardRows('Intervention_Needs').forEach(function(row) {
     const farmerId = selectedSubmissions[row.submission_id];
     if (!farmerId) return;
     const type = String(row.intervention_type_code || 'OTHER');
@@ -210,11 +216,11 @@ function getDashboardData(referenceYear, geography) {
     priorityCounts[priority][farmerId] = true;
   });
   const needNames = {};
-  getRowsAsObjects_('Ref_Intervention_Types').forEach(function(row) {
+  dashboardRows('Ref_Intervention_Types').forEach(function(row) {
     needNames[row.intervention_type_code] = row.intervention_type_name;
   });
 
-  const pendingCount = getRowsAsObjects_('Submissions').filter(function(row) {
+  const pendingCount = dashboardRows('Submissions').filter(function(row) {
     if (String(row.status || '').toUpperCase() !== 'PENDING') return false;
     try {
       const payload = parseSubmissionPayload_(row);
@@ -263,7 +269,7 @@ function getDashboardData(referenceYear, geography) {
       productionKg: row.productionKg };
   }).sort(function(a, b) { return b.farmerCount - a.farmerCount; });
   const receivedByType = {};
-  getRowsAsObjects_('Interventions').forEach(function(row) {
+  dashboardRows('Interventions').forEach(function(row) {
     if (!selectedFarmerIds[row.farmer_id] || Number(row.year_received) > year) return;
     const type = String(row.intervention_type_code || 'OTHER');
     if (!receivedByType[type]) receivedByType[type] = {};

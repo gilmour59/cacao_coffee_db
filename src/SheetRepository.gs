@@ -2,8 +2,8 @@ function getDatabase_() {
   return SpreadsheetApp.openById(getAppConfig_().spreadsheetId);
 }
 
-function getSheetOrThrow_(sheetName) {
-  const sheet = getDatabase_().getSheetByName(sheetName);
+function getSheetOrThrow_(sheetName, spreadsheet) {
+  const sheet = (spreadsheet || getDatabase_()).getSheetByName(sheetName);
   if (!sheet) {
     throw new Error('Missing required sheet: ' + sheetName);
   }
@@ -17,8 +17,8 @@ function getHeaders_(sheet) {
     .map(function(header) { return String(header || '').trim(); });
 }
 
-function getRowsAsObjects_(sheetName) {
-  const sheet = getSheetOrThrow_(sheetName);
+function getRowsAsObjects_(sheetName, spreadsheet) {
+  const sheet = getSheetOrThrow_(sheetName, spreadsheet);
   const headers = getHeaders_(sheet);
   const lastRow = sheet.getLastRow();
 

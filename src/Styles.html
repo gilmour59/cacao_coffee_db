@@ -1100,13 +1100,18 @@
   .dashboard-table-button { border: 0; background: none; color: var(--green-800); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
   .dashboard-table-button:focus-visible { outline: 3px solid var(--green-700); }
   .dashboard-trend-svg { display: block; width: 100%; max-height: 280px; }
-  #dashboard-crop-trend { overflow-x: auto; }
+  #dashboard-crop-trend, #dashboard-trend { overflow-x: auto; }
   .dashboard-donut-wrap { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-top: .8rem; }
   .dashboard-donut { width: 154px; height: 154px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
   .dashboard-donut > span { width: 92px; height: 92px; border-radius: 50%; background: #fff; display: grid; place-content: center; text-align: center; font-size: 1.2rem; font-weight: 800; color: var(--green-900); }
   .dashboard-donut small { font-size: .73rem; font-weight: 500; }
   .dashboard-donut-labels p { margin: .35rem 0; }
   .dashboard-donut-labels i { display: inline-block; width: .75rem; height: .75rem; margin-right: .4rem; border-radius: 50%; }
+  .dashboard-share { display: flex; height: 1.2rem; overflow: hidden; border-radius: 1rem; margin: 1rem 0; }
+  .dashboard-share span { min-width: 0; }
+  .dashboard-share-labels { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .35rem .8rem; }
+  .dashboard-share-labels p { margin: 0; }
+  .dashboard-share-labels i { display: inline-block; width: .75rem; height: .75rem; margin-right: .4rem; border-radius: 50%; }
   .dashboard-trend-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .5rem; }
   .dashboard-trend-legend span::before { content: ''; display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; margin-right: .35rem; background: var(--green-700); }
   .dashboard-trend-legend .cacao::before { background: #bd794c; }

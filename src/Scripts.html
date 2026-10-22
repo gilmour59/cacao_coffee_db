@@ -29,8 +29,8 @@
       .catch(handleServerError);
 
     setInterval(function() {
-      if (appState.currentMode === 'dashboard') loadDashboard();
-    }, 30000);
+      if (appState.currentMode === 'dashboard' && !document.hidden) loadDashboard();
+    }, 120000);
   });
 
   function serverCall(functionName) {
@@ -258,7 +258,7 @@
           }));
       }), 'All barangays', selected.barangayCode);
       renderDashboard(data);
-      status.textContent = 'Updated ' + new Date(data.refreshedAt).toLocaleTimeString() + ' · Refreshes every 30 seconds while open.';
+      status.textContent = 'Updated ' + new Date(data.refreshedAt).toLocaleTimeString() + ' · Refreshes every 2 minutes while open.';
     } catch (error) {
       status.textContent = 'Unable to refresh the dashboard. Please try again.';
       handleServerError(error);
@@ -293,16 +293,13 @@
     document.getElementById('dashboard-crops').innerHTML = bars((data.commodities || []).map(function(row) {
       return { name: prettyCode(row.code) + ' · ' + Number(row.areaHa || 0).toFixed(1) + ' ha', productionKg: row.productionKg };
     }), 'productionKg', 'name', ' kg');
-    document.getElementById('dashboard-trend').innerHTML = bars(data.trend || [], 'productionKg', 'year', ' kg');
+    renderDashboardTrend(data.cropTrend || [], 'dashboard-trend');
     document.getElementById('dashboard-barangays').innerHTML = bars(data.barangays || [], 'productionKg', 'name', ' kg');
     document.getElementById('dashboard-needs').innerHTML = bars(data.needs || [], 'farmerCount', 'name', ' farmers');
-    document.getElementById('dashboard-topographies').innerHTML = bars(data.topographies || [], 'count', 'name', ' farms');
-    document.getElementById('dashboard-tenure').innerHTML = bars(data.tenure || [], 'count', 'name', ' farms');
-    document.getElementById('dashboard-water').innerHTML = bars(data.waterSources || [], 'count', 'name', ' farms');
     document.getElementById('dashboard-varieties').innerHTML = bars(data.varieties || [], 'count', 'name', ' farms');
-    document.getElementById('dashboard-crop-area').innerHTML = bars(data.commodities.map(function(row) {
+    renderDashboardDonut('dashboard-crop-area', data.commodities.map(function(row) {
       return { name: prettyCode(row.code), value: row.areaHa };
-    }), 'value', 'name', ' ha');
+    }), 'ha');
     document.getElementById('dashboard-crop-production').innerHTML = bars(data.commodities.map(function(row) {
       return { name: prettyCode(row.code), value: row.productionKg };
     }), 'value', 'name', ' kg');
@@ -321,14 +318,17 @@
     renderDashboardDonut('dashboard-tree-maturity', [
       { name: 'Bearing', value: data.bearingTrees }, { name: 'Non-bearing', value: data.nonBearingTrees }
     ], 'trees');
-    [['dashboard-planting-years', data.plantingYears, ' plantings'],
-      ['dashboard-facilities', data.facilities, ' facilities'],
-      ['dashboard-rsbsa-statuses', data.rsbsaStatuses, ' farmers'],
-      ['dashboard-sexes', data.sexes, ' farmers'],
-      ['dashboard-marital', data.maritalStatuses, ' farmers'],
-      ['dashboard-priorities', data.needPriorities, ' farmers']].forEach(function(entry) {
-      document.getElementById(entry[0]).innerHTML = bars(entry[1] || [], 'count', 'name', entry[2]);
+    document.getElementById('dashboard-planting-years').innerHTML = bars(data.plantingYears || [], 'count', 'name', ' plantings');
+    [['dashboard-topographies', data.topographies, 'farms'],
+      ['dashboard-tenure', data.tenure, 'farms'],
+      ['dashboard-water', data.waterSources, 'farms'],
+      ['dashboard-facilities', data.facilities, 'facilities'],
+      ['dashboard-rsbsa-statuses', data.rsbsaStatuses, 'farmers'],
+      ['dashboard-sexes', data.sexes, 'farmers'],
+      ['dashboard-marital', data.maritalStatuses, 'farmers']].forEach(function(entry) {
+      renderDashboardShare(entry[0], entry[1] || [], entry[2]);
     });
+    document.getElementById('dashboard-priorities').innerHTML = bars(data.needPriorities || [], 'count', 'name', ' farmers');
     document.getElementById('dashboard-support').innerHTML = (data.support || []).length ? data.support.map(function(row) {
       return '<div class="dashboard-support-row"><strong>' + escapeHtml(row.name) + '</strong><span>Needed: ' + number(row.needed) + '</span><span>Received: ' + number(row.received) + '</span></div>';
     }).join('') : '<p class="has-text-grey">No support records for this selection yet.</p>';
@@ -342,7 +342,7 @@
       return '<tr><th><button type="button" class="dashboard-table-button" data-province-code="' + escapeHtml(row.provinceCode) + '" data-lgu-code="' + escapeHtml(row.code) + '">' + escapeHtml(row.name) + '</button></th><td>' + number(row.farmerCount) + '</td><td>' + number(row.farmCount) + '</td><td>' + Number(row.areaHa || 0).toFixed(1) + '</td><td>' + number(row.bearingTrees) + '</td><td>' + number(row.productionKg) + '</td></tr>';
     }).join('') || '<tr><td colspan="6">No approved data for this selection yet.</td></tr>';
     renderDashboardTrend(data.cropTrend || []);
-    renderDashboardMap();
+    if (!document.getElementById('dashboard-section-geography').classList.contains('is-hidden')) renderDashboardMap();
   }
 
   function showDashboardSection(section) {
@@ -356,8 +356,9 @@
       else button.removeAttribute('aria-current');
     });
     document.getElementById('dashboard-section-select').value = section;
-    if (section === 'geography' && appState.dashboardMap) {
-      setTimeout(function() { appState.dashboardMap.invalidateSize(); }, 50);
+    if (section === 'geography' && appState.dashboardData) {
+      renderDashboardMap();
+      if (appState.dashboardMap) setTimeout(function() { appState.dashboardMap.invalidateSize(); }, 50);
     }
   }
 
@@ -439,8 +440,23 @@
       }).join('') + '</div></div>';
   }
 
-  function renderDashboardTrend(rows) {
-    const target = document.getElementById('dashboard-crop-trend');
+  function renderDashboardShare(id, rows, unit) {
+    const target = document.getElementById(id);
+    const total = rows.reduce(function(sum, row) { return sum + Number(row.count || 0); }, 0);
+    if (!total) { target.innerHTML = '<p class="has-text-grey">No approved data for this selection yet.</p>'; return; }
+    const colors = ['#176348', '#bd794c', '#4f7f9b', '#9c6a8d', '#a18b38', '#6d8153', '#666f9b'];
+    target.innerHTML = '<div class="dashboard-share" role="img" aria-label="' + rows.map(function(row) {
+      return escapeHtml(row.name) + ' ' + Number(row.count || 0).toLocaleString() + ' ' + unit;
+    }).join(', ') + '">' + rows.map(function(row, index) {
+      return '<span style="width:' + (100 * Number(row.count || 0) / total) + '%;background:' + colors[index % colors.length] + '"></span>';
+    }).join('') + '</div><div class="dashboard-share-labels">' + rows.map(function(row, index) {
+      return '<p><i style="background:' + colors[index % colors.length] + '"></i><strong>' + escapeHtml(row.name) + '</strong> ' +
+        Math.round(100 * Number(row.count || 0) / total) + '% · ' + Number(row.count || 0).toLocaleString() + ' ' + unit + '</p>';
+    }).join('') + '</div>';
+  }
+
+  function renderDashboardTrend(rows, targetId) {
+    const target = document.getElementById(targetId || 'dashboard-crop-trend');
     if (!rows.length) { target.innerHTML = '<p class="has-text-grey">No approved production data yet.</p>'; return; }
     const years = Array.from(new Set(rows.map(function(row) { return row.year; }))).sort();
     const peak = Math.max(1, ...rows.map(function(row) { return Number(row.productionKg || 0); }));
