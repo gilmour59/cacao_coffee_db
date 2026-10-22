@@ -165,6 +165,22 @@ function getInvitationContext(rawToken) {
   const farmer = findById_('Farmers', 'farmer_id', invitation.farmer_id);
   if (!farmer) throw new Error('Farmer record is no longer available.');
 
+  const rounds = getLatestApprovedProfilingRounds_(invitation.farmer_id);
+  const database = getDatabase_();
+  const waterSources = getRowsAsObjects_('Farm_Water_Sources', database);
+  const plantings = getRowsAsObjects_('Plantings', database);
+  const observations = getRowsAsObjects_('Planting_Observations', database);
+  const production = getRowsAsObjects_('Production', database);
+  const facilitySubmissionId = rounds.length ? rounds[0].submission_id : '';
+  const facilities = getRowsAsObjects_('Facilities', database).filter(function(row) {
+    return String(row.farmer_id) === String(invitation.farmer_id) &&
+      String(row.submission_id) === String(facilitySubmissionId);
+  }).map(function(row) {
+    return { description: row.description || '', quantity: row.quantity, capacity: row.capacity || '',
+      model_description: row.model_description || '', condition_status: row.condition_status || '',
+      utilization_status: row.utilization_status || '' };
+  });
+
   const farms = findRowsByField_('Farms', 'farmer_id', invitation.farmer_id)
     .filter(function(farm) {
       if (String(farm.record_status || '').toUpperCase() !== 'ACTIVE') return false;
@@ -172,6 +188,42 @@ function getInvitationContext(rawToken) {
       return true;
     })
     .map(function(farm) {
+      const round = rounds.find(function(row) {
+        return String(row.farm_id) === String(farm.farm_id) &&
+          Number(row.reference_year) <= Number(invitation.reference_year);
+      });
+      const farmWater = waterSources.filter(function(row) { return String(row.farm_id) === String(farm.farm_id); });
+      const waterSubmissionId = farmWater.some(function(row) { return round && row.submission_id === round.submission_id; })
+        ? round.submission_id : (farmWater.length ? farmWater[farmWater.length - 1].submission_id : '');
+      const selectedWater = farmWater.filter(function(row) { return row.submission_id === waterSubmissionId; })
+        .sort(function(a, b) { return Number(parseBoolean_(b.is_primary)) - Number(parseBoolean_(a.is_primary)); });
+      const farmPlantings = plantings.filter(function(row) {
+        return String(row.farm_id) === String(farm.farm_id) && String(row.record_status || '').toUpperCase() === 'ACTIVE';
+      });
+      const cropProfiles = round ? observations.filter(function(row) {
+        return String(row.profiling_round_id) === String(round.profiling_round_id) &&
+          String(row.farm_id) === String(farm.farm_id);
+      }).map(function(row) {
+        const code = String(row.commodity_code || '').toUpperCase();
+        return { commodity_code: code, trees_newly_planted: row.trees_newly_planted || 0,
+          trees_non_bearing: row.trees_non_bearing || 0, trees_bearing: row.trees_bearing || 0,
+          mortality_count: row.mortality_count || 0, area_planted_ha: row.area_planted_ha || 0,
+          plantings: farmPlantings.filter(function(item) { return String(item.commodity_code).toUpperCase() === code; })
+            .map(function(item) { return { variety_code: item.variety_code, year_planted: item.year_planted }; }),
+          production: production.filter(function(item) {
+            // Prior-year harvests are history, not defaults for a new annual submission.
+            if (Number(round.reference_year) !== Number(invitation.reference_year)) return false;
+            return String(item.profiling_round_id) === String(round.profiling_round_id) &&
+              String(item.farm_id) === String(farm.farm_id) && String(item.commodity_code).toUpperCase() === code;
+          }).map(function(item) {
+            const date = item.harvest_date ? new Date(item.harvest_date) : null;
+            return { harvest_date: date && !isNaN(date.getTime())
+                ? Utilities.formatDate(date, 'Asia/Manila', 'yyyy-MM-dd') : '',
+              production_year: item.production_year || round.reference_year,
+              production_volume_kg: item.production_volume_kg || 0,
+              selling_price_per_kg: item.selling_price_per_kg === '' ? '' : item.selling_price_per_kg };
+          }) };
+      }) : [];
       return {
         farm_id: farm.farm_id,
         farm_name_local_id: farm.farm_name_local_id,
@@ -186,7 +238,11 @@ function getInvitationContext(rawToken) {
         location_capture_method: farm.location_capture_method,
         topography_code: farm.topography_code,
         road_distance_km: farm.road_distance_km,
-        remarks: farm.remarks
+        remarks: farm.remarks,
+        water_sources: selectedWater.map(function(row) {
+          return { water_source_code: row.water_source_code, is_primary: parseBoolean_(row.is_primary) };
+        }),
+        crops: cropProfiles
       };
     });
 
@@ -220,7 +276,8 @@ function getInvitationContext(rawToken) {
       status: invitation.status
     },
     farmer: safeFarmer,
-    farms: farms
+    farms: farms,
+    facilities: facilities
   };
 }
 

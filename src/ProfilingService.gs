@@ -82,7 +82,8 @@ function getLatestApprovedProfilingRounds_(farmerId) {
   rows.sort(function(a, b) {
     const yearDiff = Number(b.reference_year || 0) - Number(a.reference_year || 0);
     if (yearDiff !== 0) return yearDiff;
-    return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    const timeDiff = new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    return timeDiff || Number(b._rowNumber || 0) - Number(a._rowNumber || 0);
   });
   return rows;
 }

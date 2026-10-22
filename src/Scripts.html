@@ -944,6 +944,7 @@
       if (context.farms && context.farms.length) {
         prefillFarm(context.farms[0]);
       }
+      prefillFacilities(context.facilities || []);
 
       showMessage('Existing farmer profile loaded. Review and update the current profiling information.', 'is-success');
     } catch (error) {
@@ -999,6 +1000,57 @@
     if (farm.latitude !== '' && farm.longitude !== '') {
       setFarmPoint(Number(farm.latitude), Number(farm.longitude), farm.location_capture_method || 'MAP_PIN');
     }
+
+    const sourceCodes = new Set((farm.water_sources || []).map(function(row) { return row.water_source_code; }));
+    document.querySelectorAll('.water-source-checkbox').forEach(function(input) {
+      input.checked = sourceCodes.has(input.value);
+    });
+
+    (farm.crops || []).forEach(function(crop) {
+      const code = String(crop.commodity_code || '').toUpperCase();
+      const card = Array.from(document.querySelectorAll('.commodity-card')).find(function(item) {
+        return item.dataset.commodity === code;
+      });
+      if (!card) return;
+      const toggle = card.querySelector('.commodity-toggle');
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change'));
+      const key = code.toLowerCase();
+      setValue(key + '-new', crop.trees_newly_planted);
+      setValue(key + '-nonbearing', crop.trees_non_bearing);
+      setValue(key + '-bearing', crop.trees_bearing);
+      setValue(key + '-mortality', crop.mortality_count);
+      setValue(key + '-area', crop.area_planted_ha);
+      card.querySelector('.planting-rows').innerHTML = '';
+      (crop.plantings || []).forEach(function(planting) {
+        addPlantingRow(card, code);
+        const row = card.querySelector('.planting-row:last-child');
+        row.querySelector('.planting-variety').value = planting.variety_code || '';
+        row.querySelector('.planting-year').value = planting.year_planted || '';
+      });
+      (crop.production || []).forEach(function(harvest) {
+        addProductionRow(card);
+        const row = card.querySelector('.production-row:last-child');
+        row.querySelector('.production-date').value = harvest.harvest_date || '';
+        row.querySelector('.production-year').value = harvest.production_year || '';
+        row.querySelector('.production-volume').value = harvest.production_volume_kg || 0;
+        row.querySelector('.production-price').value = harvest.selling_price_per_kg === '' ? '' : harvest.selling_price_per_kg;
+      });
+    });
+  }
+
+  function prefillFacilities(facilities) {
+    document.getElementById('facility-rows').innerHTML = '';
+    facilities.forEach(function(facility) {
+      addFacilityRow();
+      const row = document.querySelector('#facility-rows .facility-row:last-child');
+      row.querySelector('.facility-description').value = facility.description || '';
+      row.querySelector('.facility-quantity').value = facility.quantity === '' ? '' : facility.quantity;
+      row.querySelector('.facility-capacity').value = facility.capacity || '';
+      row.querySelector('.facility-model').value = facility.model_description || '';
+      row.querySelector('.facility-condition').value = facility.condition_status || '';
+      row.querySelector('.facility-utilization').value = facility.utilization_status || '';
+    });
   }
 
   function collectPayload() {

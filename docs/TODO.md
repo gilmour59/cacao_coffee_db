@@ -192,6 +192,7 @@ In progress now:
 
 ## G. Time-series profiling and farm changes
 
+- [ ] Build an audited historical-data importer before institutional rollout: map legacy farmer/farm identities and source fields, deduplicate, preserve reference and production years, label missing values and provenance, pilot in TEST, then validate year-by-year totals. Fix dashboard production grouping to use `production_year` where appropriate; do not invent complete profiles from aggregate-only legacy records.
 - [x] Create new Profiling_Round for each annual cycle.
 - [ ] Additional Profiling_Round/event for expansion when required.
 - [x] Preserve previous approved yearly values.
