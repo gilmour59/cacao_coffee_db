@@ -1,6 +1,6 @@
 # V1 Roadmap
 
-Target presentation: **October 22, 2026**
+Target farmer presentation: **October 23, 2026**
 
 The project follows a TEST → UAT → HVCP Production workflow.
 
@@ -81,8 +81,9 @@ Milestone: **Validator can safely distinguish routine annual change from expansi
 
 ## Phase 4 — Dashboard/reporting — Oct 15–16
 
+- [x] Build a standalone, clearly labeled synthetic dashboard preview for the farmer presentation. It is not connected to TEST or PROD records.
+- [ ] Build the custom staff dashboard inside the app after institutional hosting is ready; use approved canonical records and server-side role/geographic checks.
 - [ ] Prepare flattened reporting views.
-- [ ] Connect Looker Studio.
 - [ ] Farmer totals based on canonical active farmers.
 - [ ] Coffee/Cacao area.
 - [ ] Tree counts by year.
@@ -130,7 +131,7 @@ No new major features after feature freeze. Only migration, defects, data/refere
 - [ ] Configure Script Properties.
 - [ ] HVCP authorizes required scopes.
 - [ ] HVCP creates production web-app deployment.
-- [ ] Connect production Looker Studio dashboard.
+- [ ] Configure the custom staff dashboard under HVCP ownership.
 - [ ] Configure authorized staff roles for link generation/validation.
 
 ## Phase 7 — Final verification — Oct 20–21
@@ -144,9 +145,9 @@ No new major features after feature freeze. Only migration, defects, data/refere
 - [ ] Demo rehearsal.
 - [ ] Final administrator/encoder guides.
 
-## Oct 22 — Presentation
+## Oct 23 — Farmer presentation
 
-Demonstrate:
+Demonstrate the TEST intake and staff workflow where rehearsed. Show the synthetic dashboard as a separate reporting preview, with its fictional-data label visible; it does not update from app submissions.
 
 ```text
 NEW FARMER
@@ -172,8 +173,9 @@ Validator
 New Approved Time-Series Record
       ↓
 Google Sheets
-      ↓
-Regional Dashboard
+
+SEPARATE PRESENTATION PREVIEW
+Synthetic, offline dashboard (not connected to Google Sheets)
 ```
 
 
@@ -182,4 +184,4 @@ Regional Dashboard
 - Coordinate with RSBSA on parcel/geospatial boundary data, identifiers, exchange format, and update process.
 - Confirm the exact RSBSA number format using a privacy-safe sample for validation/normalization; OCR remains out of V1.
 - Evaluate whether RSBSA parcel geometry should later be referenced or displayed in the profiling system.
-- Parcel digitizing/geotagging remains outside the October 22 V1 scope.
+- Parcel digitizing/geotagging remains outside the October 23 presentation scope.

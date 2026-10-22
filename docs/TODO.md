@@ -1,8 +1,8 @@
 # Project TODO
 
-## Current status — 2026-10-17
+## Current status — 2026-10-22
 
-**Active milestone:** Existing-farmer secure-link flow, reporting, and UAT after completing the first end-to-end new-farmer vertical slice.
+**Active milestone:** October 23 farmer presentation using TEST app flows and a clearly labeled synthetic dashboard. The local dashboard is a presentation preview; it is not connected to the TEST or PROD Sheet.
 
 Completed/working in TEST:
 - [x] TEST Google Sheet, Apps Script project, Script Properties, local clasp mapping, and push workflow.
@@ -20,14 +20,20 @@ Completed/working in TEST:
 - [x] Secure invitation backend exists for ANNUAL_PROFILE, EXPANSION_UPDATE, CORRECTION, and NEW_FARM.
 - [x] PSGC pilot references loaded for Iloilo → Pototan → 50 barangays.
 
+Presentation materials (separate from the TEST app):
+- [x] Build an offline synthetic dashboard preview for the presentation (280 fictional farmers, 774 observations; no real records).
+- [x] Prepare a farmer-facing presenter guide with the TEST disclaimer.
+
 In progress now:
 - [x] Complete first new-farmer vertical-slice smoke test: submit, detect/void duplicates, approve one, return one, verify canonical materialization and Audit_Log.
 - [ ] Run exact/near-duplicate RSBSA tests.
 - [ ] Test existing-farmer secure-link flow: annual profile, same-year correction, same-year expansion, new farm, and new-year round.
 - [x] Add staff-facing approved-farmer search + invitation generation/list/revoke workflow.
 - [ ] Add explicit resend/regenerate UX if HVCP wants it; raw invitation tokens are intentionally not stored.
-- [ ] Prepare flattened reporting views and Looker Studio dashboard.
-- [ ] Extend browser UI from one farm to multiple farms if still required for the Oct 22 demo.
+- [ ] Rehearse the October 23 demo on the presentation computer, including the TEST links, dashboard filters, and fallback if a live step fails.
+- [ ] Build a custom staff dashboard from approved canonical records after institutional hosting is ready; refresh after approval and periodically, with role and geographic scope enforced server-side.
+- [ ] Decide the landing-page scope and host with HVCP. Proposed entry points: new-farmer form, staff sign-in, and a clearly labeled dashboard preview; existing farmers continue using private invitation links.
+- [ ] Extend browser UI from one farm to multiple farms if still required after the demo.
 - [ ] Add public endpoint rate/abuse protection.
 - [ ] Run role-isolation, mobile, concurrency, slow-network, and security UAT.
 - [ ] Prepare PROD resources under HVCP ownership.
@@ -240,8 +246,9 @@ In progress now:
 
 ## J. Dashboard/reporting
 
+- [x] Standalone synthetic dashboard preview for the October 23 presentation; explicitly not a live Sheet report.
+- [ ] In-app staff dashboard backed by approved canonical records under the final institutional deployment. No Looker Studio dependency.
 - [ ] Flattened reporting views.
-- [ ] Looker Studio connection.
 - [ ] Canonical active farmer totals.
 - [ ] Coffee/Cacao area.
 - [ ] Tree counts by reference year.
@@ -289,7 +296,7 @@ In progress now:
 - [ ] Configure production Script Properties.
 - [ ] HVCP authorizes required Google scopes.
 - [ ] HVCP creates production web-app deployment.
-- [ ] Connect production Looker Studio.
+- [ ] Configure and verify the custom staff dashboard under HVCP ownership.
 - [ ] Production smoke test.
 - [x] Administrator/operations runbook.
 - [x] Technical maintainer command guide.
