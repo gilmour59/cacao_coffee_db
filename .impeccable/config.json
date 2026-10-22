@@ -10,7 +10,7 @@
           "src/Index.html"
         ],
         "createdAt": "2026-10-22T03:55:20.817Z",
-        "reason": "Agent: live Bulma styles render the landing h2 at 40px and body at 20px; file-only scan misses external CSS"
+        "reason": "Agent: existing Bulma is-3 and is-5 headings render visibly larger than body text in the TEST dashboard; this hook misreads the external Bulma type scale"
       }
     ]
   }
