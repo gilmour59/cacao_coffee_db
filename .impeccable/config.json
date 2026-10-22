@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "src/Index.html"
+        ],
+        "createdAt": "2026-10-22T03:55:20.817Z",
+        "reason": "Agent: live Bulma styles render the landing h2 at 40px and body at 20px; file-only scan misses external CSS"
+      }
+    ]
+  }
+}
