@@ -32,7 +32,7 @@ Ownership during initial development may be the developer account.
 
 TEST must never be pointed at the PROD database.
 
-The two TEST URLs use separate immutable versions. The staff deployment runs as the signed-in user; the farmer deployment runs as the owner for public intake. Keep the Git-tracked `src/appsscript.json` owner-only as a safe default. For a TEST staff release, temporarily set its `webapp` block to `USER_ACCESSING` / `ANYONE`, push to the TEST project, create a version, update only the staff deployment, then restore the local owner-only manifest without pushing it. Verify the farmer deployment still points to its prior version. A farmer release requires its own version with the public owner-run setting.
+The two TEST URLs use separate immutable versions. The staff deployment runs as the signed-in user; the farmer deployment runs as the owner for public intake. Keep the Git-tracked `src/appsscript.json` owner-only as a safe default. For a TEST staff release, temporarily set its `webapp` block to `USER_ACCESSING` / `ANYONE`, push to the TEST project, create a version, update only the staff deployment, then restore the local owner-only manifest without pushing it. Verify the farmer deployment still points to its prior version. For a farmer release, use `USER_DEPLOYING` / `ANYONE_ANONYMOUS` to let a farmer open a valid secure link without a Google account; `ANYONE` still redirects unsigned visitors to Google sign-in. Create a separate version, update only the farmer deployment, and restore the local owner-only manifest without pushing it.
 
 ---
 
