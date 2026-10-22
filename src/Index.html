@@ -300,37 +300,72 @@
             </div>
             <div class="dashboard-controls">
               <div><label class="label" for="dashboard-year">Year</label><div class="select"><select id="dashboard-year"></select></div></div>
+              <div><label class="label" for="dashboard-commodity">Crop</label><div class="select"><select id="dashboard-commodity"><option value="">Coffee and cacao</option><option value="COFFEE">Coffee</option><option value="CACAO">Cacao</option></select></div></div>
               <div><label class="label" for="dashboard-province">Province</label><div class="select"><select id="dashboard-province"><option value="">All provinces</option></select></div></div>
               <div><label class="label" for="dashboard-lgu">Municipality / city</label><div class="select"><select id="dashboard-lgu"><option value="">All municipalities / cities</option></select></div></div>
               <div><label class="label" for="dashboard-barangay">Barangay</label><div class="select"><select id="dashboard-barangay"><option value="">All barangays</option></select></div></div>
               <button id="refresh-dashboard" class="button is-primary" type="button">Refresh</button>
+              <button id="clear-dashboard-filters" class="button is-light" type="button">Clear filters</button>
             </div>
           </div>
           <p id="dashboard-status" class="help mb-4" role="status" aria-live="polite">Open the dashboard to load approved TEST records.</p>
-          <div class="dashboard-kpis">
-            <div class="box dashboard-kpi"><span>Farmers profiled</span><strong id="dashboard-farmers">—</strong><small>Distinct active farmers in this year</small></div>
-            <div class="box dashboard-kpi"><span>Planted area</span><strong id="dashboard-area">—</strong><small>Hectares of coffee and cacao</small></div>
-            <div class="box dashboard-kpi"><span>Bearing trees</span><strong id="dashboard-trees">—</strong><small>Latest approved farm profiles</small></div>
-            <div class="box dashboard-kpi"><span>Production</span><strong id="dashboard-production">—</strong><small>Reported kilograms</small></div>
+          <div class="dashboard-shell">
+            <nav class="dashboard-sidebar box" aria-label="Dashboard sections">
+              <p class="menu-label">Explore reports</p>
+              <button type="button" class="dashboard-section-button is-active" data-dashboard-section="overview" aria-current="page">Overview</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="geography">Geography</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="crops">Crops &amp; production</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="farms">Farms &amp; trees</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="people">Farmer profile</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="support">Support</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="quality">Data quality</button>
+            </nav>
+            <div class="dashboard-content">
+              <div class="dashboard-mobile-nav"><label class="label" for="dashboard-section-select">Dashboard section</label><div class="select is-fullwidth"><select id="dashboard-section-select"><option value="overview">Overview</option><option value="geography">Geography</option><option value="crops">Crops &amp; production</option><option value="farms">Farms &amp; trees</option><option value="people">Farmer profile</option><option value="support">Support</option><option value="quality">Data quality</option></select></div></div>
+              <section id="dashboard-section-overview" class="dashboard-section" aria-label="Overview">
+                <div class="dashboard-kpis">
+                  <div class="box dashboard-kpi"><span>Farmers profiled</span><strong id="dashboard-farmers">—</strong><small>Distinct active farmers</small></div>
+                  <div class="box dashboard-kpi"><span>Farms profiled</span><strong id="dashboard-farms">—</strong><small>Latest approved farm profiles</small></div>
+                  <div class="box dashboard-kpi"><span>Planted area</span><strong id="dashboard-area">—</strong><small>Hectares of selected crops</small></div>
+                  <div class="box dashboard-kpi"><span>Bearing trees</span><strong id="dashboard-trees">—</strong><small>Reported bearing trees</small></div>
+                  <div class="box dashboard-kpi"><span>Production</span><strong id="dashboard-production">—</strong><small>Reported kilograms</small></div>
+                </div>
+                <div class="columns"><div class="column is-7"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crops"></div></div></div><div class="column is-5"><div class="box dashboard-panel"><h3 class="title is-5">Validation pipeline</h3><p class="dashboard-pending"><strong id="dashboard-pending">—</strong> pending submissions in this location</p><p class="help">Pending counts include all crops.</p></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Production trend</h3><div id="dashboard-trend"></div></div>
+              </section>
+              <section id="dashboard-section-geography" class="dashboard-section is-hidden" aria-label="Geography">
+                <div class="box dashboard-panel"><div class="dashboard-panel-head"><div><h3 class="title is-5 mb-1">Municipality choropleth</h3><p class="help">Darker areas have higher values for the selected metric. Select an area or a table row to filter.</p></div><div><label class="label" for="dashboard-map-metric">Map metric</label><div class="select"><select id="dashboard-map-metric"><option value="farmerCount">Farmers</option><option value="areaHa">Planted area (ha)</option><option value="bearingTrees">Bearing trees</option><option value="productionKg">Production (kg)</option></select></div></div></div><div id="dashboard-map" role="img" aria-label="Municipality choropleth of approved records; exact values and keyboard controls are in the table below"></div><div id="dashboard-map-legend" class="dashboard-map-legend" aria-live="polite"></div><p id="dashboard-map-note" class="help"></p><p class="help">Municipality boundaries: geoBoundaries / NAMRIA, PSA and OCHA Philippines (2020), CC BY 3.0 IGO. Map tiles: © OpenStreetMap contributors.</p></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Municipality comparison</h3><div class="table-container"><table class="table is-fullwidth is-striped"><thead><tr><th>Municipality / city</th><th>Farmers</th><th>Farms</th><th>Area (ha)</th><th>Bearing trees</th><th>Production (kg)</th></tr></thead><tbody id="dashboard-municipalities"></tbody></table></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Top barangays by production</h3><div id="dashboard-barangays"></div></div>
+              </section>
+              <section id="dashboard-section-crops" class="dashboard-section is-hidden" aria-label="Crops and production">
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Planted area by crop</h3><div id="dashboard-crop-area"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crop-production"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production mix</h3><div id="dashboard-production-share"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Reported production per planted hectare</h3><p class="help">Production divided by reported crop area for the selected year; use as a descriptive ratio, not a measured farm yield.</p><div id="dashboard-yield"></div></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Production over time</h3><div id="dashboard-crop-trend"></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Farms by reported variety</h3><p class="help">Variety counts are farms, not trees. A farm may report more than one variety.</p><div id="dashboard-varieties"></div></div>
+              </section>
+              <section id="dashboard-section-farms" class="dashboard-section is-hidden" aria-label="Farms and trees">
+                <div class="dashboard-kpis"><div class="box dashboard-kpi"><span>Non-bearing trees</span><strong id="dashboard-nonbearing">—</strong></div><div class="box dashboard-kpi"><span>Newly planted trees</span><strong id="dashboard-newtrees">—</strong><small>May also be non-bearing</small></div><div class="box dashboard-kpi"><span>Tree mortality</span><strong id="dashboard-mortality">—</strong></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Bearing and non-bearing trees</h3><div id="dashboard-tree-maturity"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by terrain</h3><div id="dashboard-topographies"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farm tenure</h3><div id="dashboard-tenure"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Primary water source</h3><div id="dashboard-water"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Plantings by year</h3><div id="dashboard-planting-years"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Facility utilization</h3><div id="dashboard-facilities"></div></div></div></div>
+              </section>
+              <section id="dashboard-section-people" class="dashboard-section is-hidden" aria-label="Farmer profile">
+                <p class="help mb-3">Aggregate profile characteristics only. No names, contacts, RSBSA numbers, or addresses appear here.</p>
+                <div class="dashboard-kpis"><div class="box dashboard-kpi"><span>Association reported</span><strong id="dashboard-associations">—</strong><small>Of selected farmers</small></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">RSBSA status</h3><div id="dashboard-rsbsa-statuses"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Sex</h3><div id="dashboard-sexes"></div></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Marital status</h3><div id="dashboard-marital"></div></div>
+              </section>
+              <section id="dashboard-section-support" class="dashboard-section is-hidden" aria-label="Support">
+                <div class="box dashboard-panel"><h3 class="title is-5">Reported needs and received support</h3><p class="help">Counts are distinct farmers by type. Received support is not proof that a particular need was fulfilled.</p><div id="dashboard-support"></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Support needs reported</h3><div id="dashboard-needs"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Need priorities</h3><div id="dashboard-priorities"></div></div></div></div>
+              </section>
+              <section id="dashboard-section-quality" class="dashboard-section is-hidden" aria-label="Data quality">
+                <div class="box dashboard-panel"><h3 class="title is-5">Reporting coverage</h3><p class="help">Counts below are among selected approved farm profiles.</p><div id="dashboard-completeness"></div></div>
+                <p class="help">Municipalities without a boundary in this demo remain in the comparison table. Exact farm coordinates are never returned to this dashboard.</p>
+              </section>
+            </div>
           </div>
-          <div class="columns mt-1">
-            <div class="column is-7"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crops"></div></div></div>
-            <div class="column is-5"><div class="box dashboard-panel"><h3 class="title is-5">Validation pipeline</h3><p class="dashboard-pending"><strong id="dashboard-pending">—</strong> pending submissions awaiting staff review</p><p id="dashboard-rsbsa" class="help"></p></div></div>
-          </div>
-          <div class="columns">
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production over time</h3><div id="dashboard-trend"></div></div></div>
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Top barangays by production</h3><div id="dashboard-barangays"></div></div></div>
-          </div>
-          <div class="box dashboard-panel"><h3 class="title is-5">Support needs reported</h3><div id="dashboard-needs"></div></div>
-          <div class="columns">
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by terrain</h3><div id="dashboard-topographies"></div></div></div>
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farm tenure</h3><div id="dashboard-tenure"></div></div></div>
-          </div>
-          <div class="columns">
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Primary water source</h3><div id="dashboard-water"></div></div></div>
-            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by reported variety</h3><div id="dashboard-varieties"></div></div></div>
-          </div>
-          <p class="help">Staff-only summary. No names, contact details, secure tokens, or precise farm coordinates are shown.</p>
         </section>
 
         <section id="validator-view" class="is-hidden">
@@ -391,6 +426,7 @@
     window.__INITIAL_INVITATION_TOKEN__ = <?!= JSON.stringify(initialInvitationToken) ?>;
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <?!= include('MunicipalityBoundaries'); ?>
   <?!= include('Scripts'); ?>
 </body>
 </html>

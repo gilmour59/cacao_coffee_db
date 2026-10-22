@@ -32,7 +32,7 @@ In progress now:
 - [x] Add staff-facing approved-farmer search + invitation generation/list/revoke workflow.
 - [ ] Add explicit resend/regenerate UX if HVCP wants it; raw invitation tokens are intentionally not stored.
 - [ ] Rehearse the October 23 demo on the presentation computer, including the TEST links, dashboard filters, and fallback if a live step fails.
-- [x] Build a custom TEST staff dashboard from approved canonical records, with periodic refresh and server-side role/geographic scope. Institutional hosting remains future work.
+- [x] Build a custom TEST staff dashboard from approved canonical records, with periodic refresh, year/crop/province/municipality/barangay filters, section navigation, municipality choropleth, production mix and trend charts, and server-side role/geographic scope. Institutional hosting remains future work.
 - [ ] Decide the landing-page scope and host with HVCP. Proposed entry points: new-farmer form, staff sign-in, and a clearly labeled dashboard preview; existing farmers continue using private invitation links.
 - [ ] Extend browser UI from one farm to multiple farms if still required after the demo.
 - [ ] Add public endpoint rate/abuse protection.

@@ -43,6 +43,7 @@ function dashboardContext(authorized = true) {
     ]
   };
   const context = {
+    testRows: rows,
     STAFF_ROLES: { ADMIN: 'ADMIN', VALIDATOR: 'VALIDATOR', ENCODER: 'ENCODER' },
     requireStaffRole_: () => {
       if (!authorized) throw new Error('Authorized staff access is required.');
@@ -86,4 +87,54 @@ test('dashboard validates geography against staff scope', () => {
   assert.equal(context.getDashboardData(2026, { provinceCode: '603000000' }).farmerCount, 1);
   assert.throws(() => context.getDashboardData(2026, { provinceCode: '999999999' }), /authorized area/);
   assert.throws(() => context.getDashboardData(2026, { provinceCode: 'bad' }), /Invalid geography/);
+});
+
+test('crop filter changes aggregates and never returns farm locations or identifiers', () => {
+  const context = dashboardContext();
+  context.testRows.Planting_Observations.push({ profiling_round_id: 'R2', commodity_code: 'CACAO', area_planted_ha: .2, trees_bearing: 20 });
+  context.testRows.Production.push({ profiling_round_id: 'R2', commodity_code: 'CACAO', production_volume_kg: 30 });
+  context.testRows.Plantings = [
+    { farm_id: 'A', commodity_code: 'COFFEE', variety_code: 'C1', record_status: 'ACTIVE' },
+    { farm_id: 'A', commodity_code: 'CACAO', variety_code: 'C2', record_status: 'ACTIVE' }
+  ];
+  const data = context.getDashboardData(2026, { commodityCode: 'CACAO' });
+  assert.equal(data.areaHa, .2);
+  assert.equal(data.productionKg, 30);
+  assert.equal(data.municipalities[0].productionKg, 30);
+  assert.equal(data.municipalities[0].areaHa, .2);
+  assert.equal(data.varieties.length, 1);
+  assert.equal(data.varieties[0].name, 'C2');
+  assert.ok(!JSON.stringify(data).includes('F1'));
+  assert.ok(!JSON.stringify(data.municipalities).includes('B1'));
+  assert.ok(!JSON.stringify(data).includes('latitude'));
+  assert.throws(() => context.getDashboardData(2026, { commodityCode: 'BANANA' }), /valid crop/);
+});
+
+test('municipality map has only aggregate rows and honors authorized geography', () => {
+  const data = dashboardContext().getDashboardData(2026);
+  assert.equal(data.municipalities.length, 1);
+  assert.equal(data.municipalities[0].farmerCount, 1);
+  assert.equal(data.municipalities[0].farmCount, 1);
+  assert.equal(data.municipalities[0].productionKg, 120);
+  assert.ok(!('center' in data.municipalities[0]));
+  assert.equal(data.municipalities[0].code, '0603037000');
+});
+
+test('choropleth asset has distinct municipality boundaries, not farm coordinates', () => {
+  const asset = fs.readFileSync(path.join(__dirname, '../src/MunicipalityBoundaries.html'), 'utf8');
+  const match = asset.match(/window\.DASHBOARD_BOUNDARIES=(.*);<\/script>/);
+  assert.ok(match);
+  const features = JSON.parse(match[1]).features;
+  assert.equal(features.length, 11);
+  assert.equal(new Set(features.map(feature => feature.properties.code)).size, 11);
+  assert.ok(features.every(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon'));
+  assert.ok(features.every(feature => !('farmer_id' in feature.properties)));
+});
+
+test('dashboard script references only controls present in the page', () => {
+  const script = fs.readFileSync(path.join(__dirname, '../src/Scripts.html'), 'utf8');
+  const page = fs.readFileSync(path.join(__dirname, '../src/Index.html'), 'utf8');
+  for (const [, id] of script.matchAll(/getElementById\('(dashboard-[^']+)'\)/g)) {
+    assert.ok(page.includes(`id="${id}"`), `${id} is missing from Index.html`);
+  }
 });

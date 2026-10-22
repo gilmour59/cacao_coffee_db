@@ -82,7 +82,7 @@ Milestone: **Validator can safely distinguish routine annual change from expansi
 ## Phase 4 — Dashboard/reporting — Oct 15–16
 
 - [x] Build a standalone, clearly labeled synthetic dashboard preview for the farmer presentation. It is not connected to TEST or PROD records.
-- [x] Build the custom staff dashboard inside the TEST app using approved canonical records and server-side role/geographic checks. Live TEST smoke check passed on Oct 22; institutional ownership is still pending.
+- [x] Build the custom staff dashboard inside the TEST app using approved canonical records and server-side role/geographic checks. The expanded sections, municipality choropleth, and labeled production chart passed a live TEST staff-view check on Oct 22. Institutional ownership is still pending.
 - [ ] Prepare flattened reporting views.
 - [x] Profiled farmer totals based on active canonical farmers with an approved round in the selected year.
 - [x] Coffee/Cacao planted area in the selected year.

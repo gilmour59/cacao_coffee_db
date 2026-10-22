@@ -15,7 +15,10 @@
     submissionCompleted: false,
     validatorActionBusy: false,
     toastTimer: null,
-    dashboardLoading: false
+    dashboardLoading: false,
+    dashboardMap: null,
+    dashboardMapLayer: null,
+    dashboardData: null
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -57,6 +60,24 @@
     document.getElementById('home-open-dashboard').addEventListener('click', function() { switchMode('dashboard'); });
     document.getElementById('refresh-dashboard').addEventListener('click', loadDashboard);
     document.getElementById('dashboard-year').addEventListener('change', loadDashboard);
+    document.getElementById('dashboard-commodity').addEventListener('change', loadDashboard);
+    document.getElementById('clear-dashboard-filters').addEventListener('click', function() {
+      ['dashboard-commodity', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+        document.getElementById(id).value = '';
+      });
+      loadDashboard();
+    });
+    document.querySelectorAll('[data-dashboard-section]').forEach(function(button) {
+      button.addEventListener('click', function() { showDashboardSection(button.dataset.dashboardSection); });
+    });
+    document.getElementById('dashboard-section-select').addEventListener('change', function(event) {
+      showDashboardSection(event.target.value);
+    });
+    document.getElementById('dashboard-map-metric').addEventListener('change', renderDashboardMap);
+    document.getElementById('dashboard-municipalities').addEventListener('click', function(event) {
+      const button = event.target.closest('[data-lgu-code]');
+      if (button) filterDashboardMunicipality(button.dataset.provinceCode, button.dataset.lguCode);
+    });
     ['dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
       document.getElementById(id).addEventListener('change', function() {
         if (id === 'dashboard-province') {
@@ -188,6 +209,7 @@
       loadValidatorQueue();
     } else if (mode === 'dashboard') {
       loadDashboard();
+      if (appState.dashboardMap) setTimeout(function() { appState.dashboardMap.invalidateSize(); }, 50);
     } else if (appState.map) {
       setTimeout(function() { appState.map.invalidateSize(); }, 50);
     }
@@ -201,7 +223,7 @@
     const refresh = document.getElementById('refresh-dashboard');
     appState.dashboardLoading = true;
     refresh.disabled = true;
-    ['dashboard-year', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+    ['dashboard-year', 'dashboard-commodity', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
       document.getElementById(id).disabled = true;
     });
     status.textContent = 'Refreshing approved TEST records…';
@@ -209,13 +231,15 @@
       const data = await serverCall('getDashboardData', year, {
         provinceCode: document.getElementById('dashboard-province').value,
         lguCode: document.getElementById('dashboard-lgu').value,
-        barangayCode: document.getElementById('dashboard-barangay').value
+        barangayCode: document.getElementById('dashboard-barangay').value,
+        commodityCode: document.getElementById('dashboard-commodity').value
       });
       yearSelect.innerHTML = data.years.map(function(value) {
         return '<option value="' + value + '">' + value + '</option>';
       }).join('');
       yearSelect.value = String(data.year);
       const selected = data.geography;
+      document.getElementById('dashboard-commodity').value = selected.commodityCode;
       function setLocations(id, items, allLabel, value) {
         const select = document.getElementById(id);
         select.innerHTML = '<option value="">' + allLabel + '</option>' + items.map(function(item) {
@@ -241,14 +265,15 @@
     } finally {
       appState.dashboardLoading = false;
       refresh.disabled = false;
-      ['dashboard-year', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+      ['dashboard-year', 'dashboard-commodity', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
         document.getElementById(id).disabled = false;
       });
     }
   }
 
   function renderDashboard(data) {
-    const number = function(value) { return Math.round(Number(value || 0)).toLocaleString(); };
+    appState.dashboardData = data;
+    const number = function(value) { return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }); };
     const bars = function(rows, field, labelField, suffix) {
       if (!rows.length) return '<p class="has-text-grey">No approved data for this selection yet.</p>';
       const max = Math.max(1, ...rows.map(function(row) { return Number(row[field] || 0); }));
@@ -260,11 +285,11 @@
       }).join('');
     };
     document.getElementById('dashboard-farmers').textContent = number(data.farmerCount);
+    document.getElementById('dashboard-farms').textContent = number(data.farmCount);
     document.getElementById('dashboard-area').textContent = Number(data.areaHa || 0).toFixed(1) + ' ha';
     document.getElementById('dashboard-trees').textContent = number(data.bearingTrees);
     document.getElementById('dashboard-production').textContent = number(data.productionKg) + ' kg';
     document.getElementById('dashboard-pending').textContent = number(data.pendingCount);
-    document.getElementById('dashboard-rsbsa').textContent = number(data.rsbsaRegisteredCount) + ' of ' + number(data.farmerCount) + ' profiled farmers marked RSBSA registered.';
     document.getElementById('dashboard-crops').innerHTML = bars((data.commodities || []).map(function(row) {
       return { name: prettyCode(row.code) + ' · ' + Number(row.areaHa || 0).toFixed(1) + ' ha', productionKg: row.productionKg };
     }), 'productionKg', 'name', ' kg');
@@ -275,6 +300,188 @@
     document.getElementById('dashboard-tenure').innerHTML = bars(data.tenure || [], 'count', 'name', ' farms');
     document.getElementById('dashboard-water').innerHTML = bars(data.waterSources || [], 'count', 'name', ' farms');
     document.getElementById('dashboard-varieties').innerHTML = bars(data.varieties || [], 'count', 'name', ' farms');
+    document.getElementById('dashboard-crop-area').innerHTML = bars(data.commodities.map(function(row) {
+      return { name: prettyCode(row.code), value: row.areaHa };
+    }), 'value', 'name', ' ha');
+    document.getElementById('dashboard-crop-production').innerHTML = bars(data.commodities.map(function(row) {
+      return { name: prettyCode(row.code), value: row.productionKg };
+    }), 'value', 'name', ' kg');
+    document.getElementById('dashboard-yield').innerHTML = bars(data.commodities.filter(function(row) {
+      return row.areaHa > 0;
+    }).map(function(row) {
+      return { name: prettyCode(row.code), value: row.productionKg / row.areaHa };
+    }), 'value', 'name', ' kg/ha');
+    renderDashboardDonut('dashboard-production-share', data.commodities.map(function(row) {
+      return { name: prettyCode(row.code), value: row.productionKg };
+    }), 'kg');
+    document.getElementById('dashboard-nonbearing').textContent = number(data.nonBearingTrees);
+    document.getElementById('dashboard-newtrees').textContent = number(data.newlyPlantedTrees);
+    document.getElementById('dashboard-mortality').textContent = number(data.mortalityCount);
+    document.getElementById('dashboard-associations').textContent = number(data.associationCount);
+    renderDashboardDonut('dashboard-tree-maturity', [
+      { name: 'Bearing', value: data.bearingTrees }, { name: 'Non-bearing', value: data.nonBearingTrees }
+    ], 'trees');
+    [['dashboard-planting-years', data.plantingYears, ' plantings'],
+      ['dashboard-facilities', data.facilities, ' facilities'],
+      ['dashboard-rsbsa-statuses', data.rsbsaStatuses, ' farmers'],
+      ['dashboard-sexes', data.sexes, ' farmers'],
+      ['dashboard-marital', data.maritalStatuses, ' farmers'],
+      ['dashboard-priorities', data.needPriorities, ' farmers']].forEach(function(entry) {
+      document.getElementById(entry[0]).innerHTML = bars(entry[1] || [], 'count', 'name', entry[2]);
+    });
+    document.getElementById('dashboard-support').innerHTML = (data.support || []).length ? data.support.map(function(row) {
+      return '<div class="dashboard-support-row"><strong>' + escapeHtml(row.name) + '</strong><span>Needed: ' + number(row.needed) + '</span><span>Received: ' + number(row.received) + '</span></div>';
+    }).join('') : '<p class="has-text-grey">No support records for this selection yet.</p>';
+    const coverage = data.completeness;
+    document.getElementById('dashboard-completeness').innerHTML = bars([
+      { name: 'Farms missing barangay', count: coverage.missingBarangay },
+      { name: 'Farms without reported production', count: coverage.missingProduction },
+      { name: 'Profiles without crop observations', count: coverage.missingObservation }
+    ], 'count', 'name', ' profiles') + '<p class="help">Based on ' + number(coverage.farmCount) + ' selected farms.</p>';
+    document.getElementById('dashboard-municipalities').innerHTML = (data.municipalities || []).map(function(row) {
+      return '<tr><th><button type="button" class="dashboard-table-button" data-province-code="' + escapeHtml(row.provinceCode) + '" data-lgu-code="' + escapeHtml(row.code) + '">' + escapeHtml(row.name) + '</button></th><td>' + number(row.farmerCount) + '</td><td>' + number(row.farmCount) + '</td><td>' + Number(row.areaHa || 0).toFixed(1) + '</td><td>' + number(row.bearingTrees) + '</td><td>' + number(row.productionKg) + '</td></tr>';
+    }).join('') || '<tr><td colspan="6">No approved data for this selection yet.</td></tr>';
+    renderDashboardTrend(data.cropTrend || []);
+    renderDashboardMap();
+  }
+
+  function showDashboardSection(section) {
+    document.querySelectorAll('.dashboard-section').forEach(function(panel) {
+      panel.classList.toggle('is-hidden', panel.id !== 'dashboard-section-' + section);
+    });
+    document.querySelectorAll('[data-dashboard-section]').forEach(function(button) {
+      const active = button.dataset.dashboardSection === section;
+      button.classList.toggle('is-active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    document.getElementById('dashboard-section-select').value = section;
+    if (section === 'geography' && appState.dashboardMap) {
+      setTimeout(function() { appState.dashboardMap.invalidateSize(); }, 50);
+    }
+  }
+
+  function filterDashboardMunicipality(provinceCode, lguCode) {
+    document.getElementById('dashboard-province').value = provinceCode;
+    const select = document.getElementById('dashboard-lgu');
+    const locations = appState.dashboardData && appState.dashboardData.locations;
+    if (locations) select.innerHTML = '<option value="">All municipalities / cities</option>' + locations.lgus.filter(function(row) {
+      return row.provinceCode === provinceCode;
+    }).map(function(row) {
+      return '<option value="' + escapeHtml(row.code) + '">' + escapeHtml(row.name) + '</option>';
+    }).join('');
+    select.value = lguCode;
+    document.getElementById('dashboard-barangay').value = '';
+    loadDashboard();
+  }
+
+  function renderDashboardMap() {
+    const data = appState.dashboardData;
+    if (!data || typeof L === 'undefined' || !window.DASHBOARD_BOUNDARIES) return;
+    if (!appState.dashboardMap) {
+      appState.dashboardMap = L.map('dashboard-map', { scrollWheelZoom: false }).setView([11.0, 122.5], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(appState.dashboardMap);
+      appState.dashboardMapLayer = L.layerGroup().addTo(appState.dashboardMap);
+    }
+    appState.dashboardMapLayer.clearLayers();
+    const rows = {};
+    (data.municipalities || []).forEach(function(row) { rows[row.code] = row; });
+    const allowed = {};
+    data.locations.lgus.forEach(function(row) {
+      if ((!data.geography.provinceCode || row.provinceCode === data.geography.provinceCode) &&
+          (!data.geography.lguCode || row.code === data.geography.lguCode)) allowed[row.code] = row;
+    });
+    const features = window.DASHBOARD_BOUNDARIES.features.filter(function(feature) {
+      return allowed[feature.properties.code];
+    });
+    const metric = document.getElementById('dashboard-map-metric').value;
+    const values = features.map(function(feature) { return Number((rows[feature.properties.code] || {})[metric] || 0); }).filter(function(value) { return value > 0; }).sort(function(a, b) { return a - b; });
+    const shades = ['#d5e9d5', '#a7d2aa', '#67aa80', '#237454'];
+    const mapLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
+      style: function(feature) {
+        const value = Number((rows[feature.properties.code] || {})[metric] || 0);
+        const rank = values.filter(function(item) { return item <= value; }).length;
+        return { color: '#fff', weight: 1.5, fillOpacity: .85,
+          fillColor: value ? shades[Math.min(3, Math.ceil(rank * 4 / values.length) - 1)] : '#d7ddd8' };
+      },
+      onEachFeature: function(feature, layer) {
+        const location = allowed[feature.properties.code];
+        const value = Number((rows[feature.properties.code] || {})[metric] || 0);
+        layer.bindTooltip(location.name + ': ' + value.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+        layer.on('click', function() { filterDashboardMunicipality(location.provinceCode, location.code); });
+      }
+    });
+    mapLayer.addTo(appState.dashboardMapLayer);
+    if (features.length) appState.dashboardMap.fitBounds(mapLayer.getBounds().pad(.08), { maxZoom: 10 });
+    const mapped = new Set(features.map(function(feature) { return feature.properties.code; }));
+    const missing = (data.municipalities || []).filter(function(row) { return !mapped.has(row.code); }).length;
+    document.getElementById('dashboard-map-note').textContent = missing ?
+      missing + ' municipalities have no boundary in this demo and appear in the table only.' :
+      'Exact values and keyboard controls are in the comparison table below.';
+    document.getElementById('dashboard-map-legend').innerHTML = '<span class="dashboard-legend-empty">No approved data</span>' +
+      shades.map(function(shade, index) {
+        return '<span><i style="background:' + shade + '"></i>' + (index === 0 ? 'Lower' : index === 3 ? 'Higher' : '') + '</span>';
+      }).join('');
+  }
+
+  function renderDashboardDonut(id, rows, unit) {
+    const target = document.getElementById(id);
+    const total = rows.reduce(function(sum, row) { return sum + Number(row.value || 0); }, 0);
+    if (!total) { target.innerHTML = '<p class="has-text-grey">No approved data for this selection yet.</p>'; return; }
+    const firstPercent = Number(rows[0].value || 0) * 100 / total;
+    target.innerHTML = '<div class="dashboard-donut-wrap"><div class="dashboard-donut" role="img" aria-label="' +
+      rows.map(function(row) { return escapeHtml(row.name) + ' ' + Math.round(row.value * 100 / total) + '%'; }).join(', ') +
+      '" style="background:conic-gradient(#176348 0 ' + firstPercent + '%,#bd794c ' + firstPercent + '% 100%)"><span>' +
+      total.toLocaleString() + '<small>' + unit + '</small></span></div><div class="dashboard-donut-labels">' +
+      rows.map(function(row, index) {
+        return '<p><i style="background:' + (index ? '#bd794c' : '#176348') + '"></i><strong>' + escapeHtml(row.name) +
+          '</strong> ' + Math.round(row.value * 100 / total) + '% · ' + Number(row.value || 0).toLocaleString() + ' ' + unit + '</p>';
+      }).join('') + '</div></div>';
+  }
+
+  function renderDashboardTrend(rows) {
+    const target = document.getElementById('dashboard-crop-trend');
+    if (!rows.length) { target.innerHTML = '<p class="has-text-grey">No approved production data yet.</p>'; return; }
+    const years = Array.from(new Set(rows.map(function(row) { return row.year; }))).sort();
+    const peak = Math.max(1, ...rows.map(function(row) { return Number(row.productionKg || 0); }));
+    const step = Math.pow(10, Math.floor(Math.log10(peak)));
+    const max = Math.ceil(peak / step) * step;
+    const colors = { COFFEE: '#176348', CACAO: '#bd794c' };
+    const codes = appState.dashboardData.geography.commodityCode ? [appState.dashboardData.geography.commodityCode] : ['COFFEE', 'CACAO'];
+    const x = function(i) { return years.length === 1 ? 365 : 70 + i * 590 / (years.length - 1); };
+    const y = function(value) { return 220 - 180 * value / max; };
+    const grid = [0, .25, .5, .75, 1].map(function(fraction) {
+      const lineY = y(max * fraction);
+      return '<line x1="70" x2="660" y1="' + lineY + '" y2="' + lineY + '" stroke="#dce6dc"/>' +
+        '<text x="61" y="' + (lineY + 4) + '" text-anchor="end" font-size="12" fill="#50635a">' +
+        Math.round(max * fraction).toLocaleString() + '</text>';
+    }).join('');
+    const yearLabels = years.map(function(year, i) {
+      return '<text x="' + x(i) + '" y="246" text-anchor="middle" font-size="13" fill="#354b3f">' + year + '</text>';
+    }).join('');
+    const lines = codes.map(function(code) {
+      const points = years.map(function(year, i) {
+        const found = rows.find(function(row) { return row.year === year && row.code === code; });
+        return x(i) + ',' + y(Number(found && found.productionKg || 0));
+      });
+      return '<polyline points="' + points.join(' ') + '" fill="none" stroke="' + colors[code] + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />' +
+        points.map(function(point) {
+          const pair = point.split(',');
+          return '<circle cx="' + pair[0] + '" cy="' + pair[1] + '" r="5" fill="' + colors[code] + '"/>';
+        }).join('');
+    }).join('');
+    target.innerHTML = '<svg class="dashboard-trend-svg" viewBox="0 0 700 290" role="img" aria-label="Production in kilograms by year for selected crops">' +
+      grid + yearLabels + '<text x="365" y="282" text-anchor="middle" font-size="14" fill="#354b3f">Year</text>' +
+      '<text x="17" y="130" transform="rotate(-90 17 130)" text-anchor="middle" font-size="14" fill="#354b3f">Production (kg)</text>' + lines +
+      '</svg><div class="dashboard-trend-legend">' + codes.map(function(code) {
+        return '<span class="' + (code === 'CACAO' ? 'cacao' : '') + '">' + prettyCode(code) + '</span>';
+      }).join('') + '</div>' +
+      '<p class="help">' + years.map(function(year) {
+        return year + ': ' + codes.map(function(code) {
+          const found = rows.find(function(row) { return row.year === year && row.code === code; });
+          return code.toLowerCase() + ' ' + Math.round(Number(found && found.productionKg || 0)).toLocaleString() + ' kg';
+        }).join(', ');
+      }).join(' · ') + '</p>';
   }
 
   function getRefs(name) {
