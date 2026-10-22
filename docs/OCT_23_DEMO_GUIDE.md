@@ -21,7 +21,7 @@ Both URLs use TEST version 30. The private TEST Sheet holds the records. PROD wa
 - Both published TEST URLs loaded the new Home view; the signed-in admin saw the staff dashboard tab.
 - The live staff dashboard read the TEST Sheet after the expanded seed: **121 farmers, 84.6 ha, 34,200 bearing trees, and 77,540 kg** in 2026. Of the 121, **120 are synthetic demo profiles** and one was already in TEST. These figures are not field statistics.
 - The October 22 TEST staff release also loaded the new municipality choropleth, production mix, per-hectare comparison, and labeled 2025–2026 line graph. The complete presentation flow still needs rehearsal on the presentation computer.
-- TEST staff version 34 adds proportional farm/profile charts and reduces repeat Sheet opens. The new charts loaded in the signed-in admin session; a warm live refresh still took about 10 seconds.
+- TEST staff version 35 adds proportional farm/profile charts and reduces repeat Sheet opens and value fetches. The new charts loaded in the signed-in admin session; a warm live refresh still took about 10 seconds.
 - Province, municipality, and barangay filters changed the live totals. For example, Iloilo showed 51 farmers; Pototan showed 33; Abangay showed 4. The four levels of totals and charts followed farm location.
 - The 120-profile seed completed in TEST. Local rerun checks passed; a live rerun was not performed.
 

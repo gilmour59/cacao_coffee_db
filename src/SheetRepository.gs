@@ -19,14 +19,11 @@ function getHeaders_(sheet) {
 
 function getRowsAsObjects_(sheetName, spreadsheet) {
   const sheet = getSheetOrThrow_(sheetName, spreadsheet);
-  const headers = getHeaders_(sheet);
-  const lastRow = sheet.getLastRow();
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const headers = values[0].map(function(header) { return String(header || '').trim(); });
 
-  if (headers.length === 0 || lastRow < 2) return [];
-
-  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
-
-  return values.map(function(row, rowIndex) {
+  return values.slice(1).map(function(row, rowIndex) {
     const obj = { _rowNumber: rowIndex + 2 };
     headers.forEach(function(header, index) {
       if (header) obj[header] = row[index];
