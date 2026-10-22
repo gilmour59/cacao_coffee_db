@@ -3,6 +3,8 @@ const APP_DEFAULTS = Object.freeze({
   ENVIRONMENT: 'TEST'
 });
 
+var STAFF_BRIDGE_ACTOR_EMAIL = '';
+
 function getAppConfig_() {
   const props = PropertiesService.getScriptProperties();
 
@@ -19,6 +21,7 @@ function getAppConfig_() {
 }
 
 function getActorEmail_() {
+  if (STAFF_BRIDGE_ACTOR_EMAIL) return STAFF_BRIDGE_ACTOR_EMAIL;
   try {
     return Session.getActiveUser().getEmail() || '';
   } catch (error) {

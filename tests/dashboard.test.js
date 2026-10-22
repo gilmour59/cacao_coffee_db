@@ -1,0 +1,150 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+function dashboardContext(authorized = true) {
+  const rows = {
+    Farmers: [
+      { farmer_id: 'F1', record_status: 'ACTIVE', residence_province_code: '603000000', residence_lgu_code: '603037000', rsbsa_registration_status: 'REGISTERED' },
+      { farmer_id: 'F2', record_status: 'ACTIVE', residence_province_code: '999', residence_lgu_code: '999', rsbsa_registration_status: 'REGISTERED' }
+    ],
+    Farms: [
+      { farm_id: 'A', farmer_id: 'F1', record_status: 'ACTIVE', province_code: '603000000', lgu_code: '603037000', barangay_code: 'B1' },
+      { farm_id: 'B', farmer_id: 'F2', record_status: 'ACTIVE', province_code: '999', lgu_code: '999', barangay_code: 'B2' }
+    ],
+    Profiling_Rounds: [
+      { profiling_round_id: 'R0', farm_id: 'A', farmer_id: 'F1', reference_year: 2025, status: 'APPROVED', submission_id: 'S0', updated_at: '2025-01-01', _rowNumber: 2 },
+      { profiling_round_id: 'R1', farm_id: 'A', farmer_id: 'F1', reference_year: 2026, status: 'APPROVED', submission_id: 'S1', updated_at: '2026-01-01', _rowNumber: 3 },
+      { profiling_round_id: 'R2', farm_id: 'A', farmer_id: 'F1', reference_year: 2026, status: 'APPROVED', submission_id: 'S2', updated_at: '2026-02-01', _rowNumber: 4 },
+      { profiling_round_id: 'RO', farm_id: 'B', farmer_id: 'F2', reference_year: 2026, status: 'APPROVED', submission_id: 'SO', updated_at: '2026-03-01', _rowNumber: 5 }
+    ],
+    Planting_Observations: [
+      { profiling_round_id: 'R1', commodity_code: 'COFFEE', area_planted_ha: .6, trees_bearing: 40 },
+      { profiling_round_id: 'R2', commodity_code: 'COFFEE', area_planted_ha: .8, trees_bearing: 60 },
+      { profiling_round_id: 'RO', commodity_code: 'CACAO', area_planted_ha: 9, trees_bearing: 900 }
+    ],
+    Production: [
+      { profiling_round_id: 'R0', commodity_code: 'COFFEE', production_volume_kg: 50 },
+      { profiling_round_id: 'R1', commodity_code: 'COFFEE', production_volume_kg: 100 },
+      { profiling_round_id: 'R2', commodity_code: 'COFFEE', production_volume_kg: 120 },
+      { profiling_round_id: 'RO', commodity_code: 'CACAO', production_volume_kg: 900 }
+    ],
+    Ref_Provinces: [{ province_code: '603000000', province_name: 'Iloilo', is_active: true }],
+    Ref_LGUs: [{ lgu_code: '603037000', province_code: '603000000', lgu_name: 'Pototan', is_active: true }],
+    Ref_Barangays: [{ barangay_code: 'B1', barangay_name: 'Demo Barangay' }],
+    Intervention_Needs: [{ submission_id: 'S2', intervention_type_code: 'TRAINING' }],
+    Ref_Intervention_Types: [{ intervention_type_code: 'TRAINING', intervention_type_name: 'Training' }],
+    Submissions: [
+      { status: 'PENDING', payload: { farmer: { residence_province_code: '603000000', residence_lgu_code: '603037000' } } },
+      { status: 'PENDING', payload: { farmer: { residence_province_code: '999', residence_lgu_code: '999' } } },
+      { status: 'APPROVED', payload: {} }
+    ]
+  };
+  const context = {
+    testRows: rows,
+    databaseOpens: 0,
+    sheetReads: {},
+    STAFF_ROLES: { ADMIN: 'ADMIN', VALIDATOR: 'VALIDATOR', ENCODER: 'ENCODER' },
+    requireStaffRole_: () => {
+      if (!authorized) throw new Error('Authorized staff access is required.');
+      return { province_code: '603000000', lgu_code: '603037000' };
+    },
+    getDatabase_: () => { context.databaseOpens++; return {}; },
+    getRowsAsObjects_: name => { context.sheetReads[name] = (context.sheetReads[name] || 0) + 1; return rows[name] || []; },
+    assertStaffGeographicScope_: (staff, province, lgu) => {
+      if (province !== staff.province_code || lgu !== staff.lgu_code) throw new Error('Outside scope');
+    },
+    assertSubmissionScopeForStaff_: (staff, _row, payload) => {
+      context.assertStaffGeographicScope_(staff, payload.farmer.residence_province_code, payload.farmer.residence_lgu_code);
+    },
+    parseSubmissionPayload_: row => row.payload,
+    Date, Number, Set, Object, Array
+  };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/DashboardService.gs'), 'utf8'), context);
+  return context;
+}
+
+test('dashboard counts latest approved scoped records and keeps pending separate', () => {
+  const data = dashboardContext().getDashboardData(2026);
+  assert.equal(data.farmerCount, 1);
+  assert.equal(data.areaHa, .8);
+  assert.equal(data.bearingTrees, 60);
+  assert.equal(data.productionKg, 120);
+  assert.equal(data.pendingCount, 1);
+  assert.equal(data.rsbsaRegisteredCount, 1);
+  assert.equal(data.needs[0].farmerCount, 1);
+  assert.equal(data.trend.find(row => row.year === 2025).productionKg, 50);
+  assert.ok(!JSON.stringify(data).includes('F1'));
+});
+
+test('dashboard opens the spreadsheet once and reads each sheet once per refresh', () => {
+  const context = dashboardContext();
+  context.getDashboardData(2026);
+  assert.equal(context.databaseOpens, 1);
+  assert.ok(Object.values(context.sheetReads).every(count => count === 1));
+});
+
+test('dashboard rejects unauthorized callers and invalid years', () => {
+  assert.throws(() => dashboardContext(false).getDashboardData(2026), /Authorized staff/);
+  assert.throws(() => dashboardContext().getDashboardData('bad'), /valid reference year/);
+});
+
+test('dashboard validates geography against staff scope', () => {
+  const context = dashboardContext();
+  assert.equal(context.getDashboardData(2026, { provinceCode: '603000000' }).farmerCount, 1);
+  assert.throws(() => context.getDashboardData(2026, { provinceCode: '999999999' }), /authorized area/);
+  assert.throws(() => context.getDashboardData(2026, { provinceCode: 'bad' }), /Invalid geography/);
+});
+
+test('crop filter changes aggregates and never returns farm locations or identifiers', () => {
+  const context = dashboardContext();
+  context.testRows.Planting_Observations.push({ profiling_round_id: 'R2', commodity_code: 'CACAO', area_planted_ha: .2, trees_bearing: 20 });
+  context.testRows.Production.push({ profiling_round_id: 'R2', commodity_code: 'CACAO', production_volume_kg: 30 });
+  context.testRows.Plantings = [
+    { farm_id: 'A', commodity_code: 'COFFEE', variety_code: 'C1', record_status: 'ACTIVE' },
+    { farm_id: 'A', commodity_code: 'CACAO', variety_code: 'C2', record_status: 'ACTIVE' }
+  ];
+  const data = context.getDashboardData(2026, { commodityCode: 'CACAO' });
+  assert.equal(data.areaHa, .2);
+  assert.equal(data.productionKg, 30);
+  assert.equal(data.municipalities[0].productionKg, 30);
+  assert.equal(data.municipalities[0].areaHa, .2);
+  assert.equal(data.varieties.length, 1);
+  assert.equal(data.varieties[0].name, 'C2');
+  assert.ok(!JSON.stringify(data).includes('F1'));
+  assert.ok(!JSON.stringify(data.municipalities).includes('B1'));
+  assert.ok(!JSON.stringify(data).includes('latitude'));
+  assert.throws(() => context.getDashboardData(2026, { commodityCode: 'BANANA' }), /valid crop/);
+});
+
+test('municipality map has only aggregate rows and honors authorized geography', () => {
+  const data = dashboardContext().getDashboardData(2026);
+  assert.equal(data.municipalities.length, 1);
+  assert.equal(data.municipalities[0].farmerCount, 1);
+  assert.equal(data.municipalities[0].farmCount, 1);
+  assert.equal(data.municipalities[0].productionKg, 120);
+  assert.ok(!('center' in data.municipalities[0]));
+  assert.equal(data.municipalities[0].code, '0603037000');
+});
+
+test('choropleth asset has distinct municipality boundaries, not farm coordinates', () => {
+  const asset = fs.readFileSync(path.join(__dirname, '../src/MunicipalityBoundaries.html'), 'utf8');
+  const match = asset.match(/window\.DASHBOARD_BOUNDARIES=(.*);<\/script>/);
+  assert.ok(match);
+  const features = JSON.parse(match[1]).features;
+  assert.equal(features.length, 11);
+  assert.equal(new Set(features.map(feature => feature.properties.code)).size, 11);
+  assert.ok(features.every(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon'));
+  assert.ok(features.every(feature => !('farmer_id' in feature.properties)));
+});
+
+test('dashboard script references only controls present in the page', () => {
+  const script = fs.readFileSync(path.join(__dirname, '../src/Scripts.html'), 'utf8');
+  const page = fs.readFileSync(path.join(__dirname, '../src/Index.html'), 'utf8');
+  for (const [, id] of script.matchAll(/getElementById\('(dashboard-[^']+)'\)/g)) {
+    assert.ok(page.includes(`id="${id}"`), `${id} is missing from Index.html`);
+  }
+});

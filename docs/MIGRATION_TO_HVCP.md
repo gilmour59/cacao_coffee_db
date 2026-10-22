@@ -78,7 +78,7 @@ The HVCP deployment URL becomes the official application URL. The developer's TE
 
 ## Step 7 — Dashboard
 
-Connect Looker Studio to the HVCP production reporting views/sheets rather than TEST sheets.
+Deploy the custom staff dashboard under HVCP ownership and connect it to approved production records. Keep TEST synthetic records out of production.
 
 ## Step 8 — Smoke test
 

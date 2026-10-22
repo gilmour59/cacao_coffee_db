@@ -1,6 +1,6 @@
 # V1 Roadmap
 
-Target presentation: **October 22, 2026**
+Target farmer presentation: **October 23, 2026**
 
 The project follows a TEST → UAT → HVCP Production workflow.
 
@@ -12,7 +12,7 @@ The project follows a TEST → UAT → HVCP Production workflow.
 - [x] Define PSGC Province → Municipality/City → Barangay references.
 - [x] Include approximate farm point capture.
 - [x] Keep parcel-boundary digitizing/geotagging out of V1; defer RSBSA parcel coordination to backlog.
-- [x] Include RSBSA status and client-side OCR in V1 scope.
+- [x] Include RSBSA status and manual number entry in V1; OCR removed to reduce operational risk.
 - [x] Define permanent Farmer Master + time-series profiling model.
 - [x] Finalize V1 farmer access model:
   - public generic intake link for new farmers;
@@ -27,77 +27,80 @@ The project follows a TEST → UAT → HVCP Production workflow.
 
 ## Phase 1 — Core intake + secure-link infrastructure — Oct 1–5
 
-- [ ] Create TEST Google Sheet.
-- [ ] Create TEST Apps Script project.
-- [ ] Configure clasp.
-- [ ] Implement public NEW-farmer intake flow.
-- [ ] Implement PENDING new-farmer submission state.
-- [ ] Implement server-side duplicate/identity checks.
-- [ ] Implement Profiling_Invitations.
-- [ ] Implement secure random token generation + token-hash lookup.
-- [ ] Implement ACTIVE / SUBMITTED / RETURNED / EXPIRED / REVOKED invitation states.
-- [ ] Implement staff link generation/resend/revoke actions.
+- [x] Create TEST Google Sheet.
+- [x] Create TEST Apps Script project.
+- [x] Configure clasp.
+- [x] Implement public NEW-farmer intake flow.
+- [x] Implement PENDING new-farmer submission state.
+- [x] Implement server-side duplicate/identity checks.
+- [x] Implement Profiling_Invitations.
+- [x] Implement secure random token generation + token-hash lookup.
+- [x] Implement ACTIVE / SUBMITTED / RETURNED / EXPIRED / REVOKED invitation states.
+- [x] Implement staff farmer search + link generation/list/revoke actions.
+- [ ] Finalize explicit resend/regenerate UX/policy.
 - [ ] Implement Encoder-assisted intake path.
-- [ ] Implement farm registration, PSGC cascading dropdowns, and approximate map pin.
+- [x] Implement farm registration, PSGC cascading dropdowns, and approximate map pin.
 
 Milestone: **New farmer public intake and existing farmer personalized link can both reach a valid pending submission safely.**
 
 ## Phase 2 — Time-series Coffee/Cacao profiling — Oct 6–10
 
-- [ ] Implement Profiling_Rounds.
+- [x] Implement Profiling_Rounds.
 - [ ] Create a new annual observation instead of overwriting previous-year values.
 - [ ] Support expansion/update profiling events.
-- [ ] Commodity and variety selection.
-- [ ] Year planted.
-- [ ] Newly planted, non-bearing, bearing, and mortality counts per commodity per farm.
-- [ ] Area planted.
-- [ ] Per-harvest production records in kg, including selling price per kg.
-- [ ] Farmer-level post-harvest facility/equipment details with utilization.
-- [ ] Assistance/interventions received.
-- [ ] Intervention needs.
-- [ ] Source of water.
-- [ ] Review screen.
+- [x] Commodity and variety selection.
+- [x] Year planted.
+- [x] Newly planted, non-bearing, bearing, and mortality counts per commodity per farm.
+- [x] Area planted.
+- [x] Per-harvest production records in kg, including selling price per kg.
+- [x] Farmer-level post-harvest facility/equipment details with utilization.
+- [x] Assistance/interventions received.
+- [x] Intervention needs.
+- [x] Source of water.
+- [x] Review screen.
 
 Milestone: **A farmer can accumulate multiple approved yearly profiling records while preserving history.**
 
-## Phase 3 — OCR + change/anomaly + validation — Oct 11–14
+## Phase 3 — identity safeguards + change/anomaly + validation — Oct 11–14
 
-- [ ] Camera/file capture via mobile file input.
-- [ ] Client-side image preprocessing.
-- [ ] Tesseract.js OCR.
-- [ ] Extract RSBSA number and farmer name.
-- [ ] User verification screen.
-- [ ] Ensure source image is not uploaded or retained.
-- [ ] Compare current submission with latest approved record.
-- [ ] Classify NO_CHANGE / MODIFICATION / NEW_ENTRY / EXPANSION / ANOMALY.
-- [ ] Flag duplicate/RSBSA conflicts.
-- [ ] Flag identity corrections.
-- [ ] Flag significant farm-area/tree-count/production changes.
-- [ ] Validator sees previous vs submitted values and reasons.
-- [ ] Approve / Return / Confirm Expansion / Route Identity Review.
-- [ ] Audit log.
+- [x] Manual RSBSA number entry with user verification.
+- [x] No RSBSA ID image capture or OCR in V1.
+- [x] Exact RSBSA duplicate check.
+- [x] Conservative near-duplicate RSBSA check for one-character typos and adjacent transpositions.
+- [x] Compare current submission with latest approved record.
+- [x] Classify NO_CHANGE / MODIFICATION / NEW_ENTRY / EXPANSION / ANOMALY.
+- [x] Flag duplicate/RSBSA conflicts.
+- [x] Flag identity corrections.
+- [x] Flag significant farm-area/tree-count/production changes.
+- [x] Validator sees previous vs submitted values and reasons.
+- [x] Approve / Return / Duplicate-Spam voiding / Route Identity Review.
+- [ ] Confirm Expansion / New Farm end-to-end behavior.
+- [x] Audit log.
 
 Milestone: **Validator can safely distinguish routine annual change from expansion, correction, duplicate risk, and anomaly.**
 
 ## Phase 4 — Dashboard/reporting — Oct 15–16
 
+- [x] Build a standalone, clearly labeled synthetic dashboard preview for the farmer presentation. It is not connected to TEST or PROD records.
+- [x] Build the custom staff dashboard inside the TEST app using approved canonical records and server-side role/geographic checks. The expanded sections, municipality choropleth, and labeled production chart passed a live TEST staff-view check on Oct 22. Institutional ownership is still pending.
 - [ ] Prepare flattened reporting views.
-- [ ] Connect Looker Studio.
-- [ ] Farmer totals based on canonical active farmers.
-- [ ] Coffee/Cacao area.
-- [ ] Tree counts by year.
-- [ ] Production by year.
+- [x] Profiled farmer totals based on active canonical farmers with an approved round in the selected year.
+- [x] Coffee/Cacao planted area in the selected year.
+- [x] Bearing tree counts in the selected year.
+- [x] Production trend by year.
 - [ ] Province/Municipality/Barangay filters.
 - [ ] Variety/year filters.
-- [ ] RSBSA registration indicators.
+- [x] RSBSA registration indicator.
 - [ ] Farm point map.
-- [ ] Intervention-needs summaries.
+- [x] Intervention-needs summaries.
 - [ ] Optional annual change/expansion indicators.
 - [ ] Export-friendly views.
 
 ## Phase 5 — UAT + security testing — Oct 17–18
 
-- [ ] Public new-farmer intake test.
+Current checkpoint: first new-farmer vertical slice has passed submit → duplicate handling → approve/return → canonical materialization. Remaining UAT focuses on existing-farmer/time-series/security paths.
+
+- [x] Public new-farmer intake test.
 - [ ] Personalized link test.
 - [ ] Invalid/expired/revoked/tampered link tests.
 - [ ] Reuse-after-submit test.
@@ -109,12 +112,12 @@ Milestone: **Validator can safely distinguish routine annual change from expansi
 - [ ] Anomaly classification test.
 - [ ] Encoder-assisted audit test.
 - [ ] Android/mobile browser testing.
-- [ ] Desktop browser testing.
+- [x] Desktop browser smoke test for first vertical slice.
 - [ ] Slow-network testing.
 - [ ] Concurrent submission tests.
-- [ ] OCR tests with sample images.
+- [ ] Manual RSBSA typo/transposition and collision tests.
 - [ ] Map and PSGC validation.
-- [ ] Realistic demo dataset.
+- [x] Seed 24 clearly synthetic Pototan profiles in TEST for the Oct 23 presentation. PROD remains empty/unchanged.
 
 ## Feature freeze — Oct 19
 
@@ -128,7 +131,7 @@ No new major features after feature freeze. Only migration, defects, data/refere
 - [ ] Configure Script Properties.
 - [ ] HVCP authorizes required scopes.
 - [ ] HVCP creates production web-app deployment.
-- [ ] Connect production Looker Studio dashboard.
+- [ ] Configure the custom staff dashboard under HVCP ownership.
 - [ ] Configure authorized staff roles for link generation/validation.
 
 ## Phase 7 — Final verification — Oct 20–21
@@ -142,9 +145,9 @@ No new major features after feature freeze. Only migration, defects, data/refere
 - [ ] Demo rehearsal.
 - [ ] Final administrator/encoder guides.
 
-## Oct 22 — Presentation
+## Oct 23 — Farmer presentation
 
-Demonstrate:
+Use the TEST landing page and staff dashboard together. The dashboard reads approved canonical TEST Sheet rows and refreshes while open. The current chart baseline includes 24 fictional seed profiles; do not describe it as actual farmer statistics. Show a supervised synthetic submission and validator approval only after a fresh rehearsal. Keep the testing disclaimer visible.
 
 ```text
 NEW FARMER
@@ -170,14 +173,15 @@ Validator
 New Approved Time-Series Record
       ↓
 Google Sheets
-      ↓
-Regional Dashboard
+
+SEPARATE PRESENTATION PREVIEW
+Synthetic, offline dashboard (not connected to Google Sheets)
 ```
 
 
 ## Post-V1 backlog
 
 - Coordinate with RSBSA on parcel/geospatial boundary data, identifiers, exchange format, and update process.
-- Confirm the exact RSBSA number format using a privacy-safe sample for OCR tuning.
+- Confirm the exact RSBSA number format using a privacy-safe sample for validation/normalization; OCR remains out of V1.
 - Evaluate whether RSBSA parcel geometry should later be referenced or displayed in the profiling system.
-- Parcel digitizing/geotagging remains outside the October 22 V1 scope.
+- Parcel digitizing/geotagging remains outside the October 23 presentation scope.

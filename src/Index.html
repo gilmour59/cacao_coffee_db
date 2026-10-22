@@ -1,120 +1,435 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="light">
 <head>
   <base target="_top">
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <?!= include('Styles'); ?>
 </head>
 <body>
   <section class="section app-shell">
-    <div class="container is-max-desktop">
-      <div class="mb-5">
-        <p class="is-size-7 has-text-grey"><?= environment ?></p>
-        <h1 class="title is-4"><?= appName ?></h1>
-        <p class="subtitle is-6">
-          Farmer profiling, approximate farm location, Coffee/Cacao production,
-          facilities, and intervention needs.
-        </p>
+    <div class="container">
+      <div class="app-header mb-5">
+        <div class="brand-copy">
+          <h1 class="title is-4 mb-2 app-title"><?= appName ?></h1>
+          <p class="subtitle is-6 mb-0 app-subtitle">HVCP Coffee and Cacao farmer profiling, annual updates, and validation.</p>
+        </div>
+        <div id="staff-badge" class="is-hidden has-text-right">
+          <p class="is-size-7 has-text-grey">Signed-in staff</p>
+          <p id="staff-name" class="has-text-weight-semibold"></p>
+          <p id="staff-role" class="is-size-7 has-text-grey"></p>
+        </div>
       </div>
 
-      <div id="app-message" class="notification is-hidden"></div>
+      <? if (environment === 'TEST') { ?>
+      <div class="notification is-warning is-light" role="note">
+        <strong>Demo and testing version.</strong> This app is still being tested. Information entered here is not an official farmer submission. Please do not enter real personal or farm details during the demo unless project staff invite you to participate in a supervised test.
+      </div>
+      <? } ?>
 
-      <div class="box">
-        <div class="steps-bar mb-5">
-          <span class="step-pill is-active">1. Farmer</span>
-          <span class="step-pill">2. Farm</span>
-          <span class="step-pill">3. Commodity</span>
-          <span class="step-pill">4. Production</span>
-          <span class="step-pill">5. Review</span>
+      <div id="app-message" class="notification app-toast is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+      <div id="loading-state" class="box">
+        <progress class="progress is-small is-primary" max="100">Loading</progress>
+        <p class="has-text-grey">Loading system reference data…</p>
+      </div>
+
+      <div id="app-content" class="is-hidden">
+        <div id="mode-tabs" class="tabs is-boxed mb-5">
+          <ul>
+            <li id="home-tab" class="is-active"><a data-mode="home">Home</a></li>
+            <li id="intake-tab"><a data-mode="intake">Profiling Form</a></li>
+            <li id="invitation-tab" class="is-hidden"><a data-mode="invitations">Existing Farmer Links</a></li>
+            <li id="validator-tab" class="is-hidden"><a data-mode="validator">Validator Queue</a></li>
+            <li id="dashboard-tab" class="is-hidden"><a data-mode="dashboard">Live Dashboard</a></li>
+          </ul>
         </div>
 
-        <div id="loading-state">
-          <progress class="progress is-small is-primary" max="100">Loading</progress>
-          <p class="has-text-grey">Loading reference data…</p>
-        </div>
-
-        <div id="farmer-step" class="is-hidden">
-          <h2 class="title is-5">Farmer Information</h2>
-
-          <div class="field">
-            <label class="label">RSBSA Registration Status</label>
-            <div class="control">
-              <label class="radio">
-                <input type="radio" name="rsbsa_status" value="REGISTERED_ID_AVAILABLE">
-                Registered — ID available
-              </label>
-              <br>
-              <label class="radio">
-                <input type="radio" name="rsbsa_status" value="REGISTERED_NO_ID">
-                Registered — ID not available
-              </label>
-              <br>
-              <label class="radio">
-                <input type="radio" name="rsbsa_status" value="NOT_REGISTERED">
-                Not yet registered
-              </label>
-            </div>
+        <section id="home-view">
+          <div class="home-hero box">
+            <p class="has-text-weight-semibold mb-2">Coffee and cacao profiling</p>
+            <h2 class="title is-2 mb-3">A clearer picture of farms and the support farmers need.</h2>
+            <p class="is-size-5 mb-5">Submit a profile, have it checked by authorized staff, and turn approved records into useful local reporting.</p>
+            <button id="home-start-intake" class="button is-primary is-medium" type="button">Start New Farmer Profile</button>
           </div>
+          <div class="columns">
+            <div class="column"><div class="box home-card"><h3 class="title is-5">Already profiled?</h3><p>Open the personal secure link sent by authorized staff. The link loads your permitted farmer context; no separate farmer account is needed.</p></div></div>
+            <div class="column"><div class="box home-card"><h3 class="title is-5">Staff workflow</h3><p>Authorized staff can create links, review submissions, and see approved results in the live dashboard.</p><button id="home-open-dashboard" class="button is-link is-light mt-3 is-hidden" type="button">Open Live Dashboard</button></div></div>
+          </div>
+        </section>
 
-          <div id="rsbsa-scan-panel" class="field is-hidden">
-            <label class="label">Scan RSBSA ID</label>
-            <div class="control">
-              <input id="rsbsa-image" class="input" type="file" accept="image/*" capture="environment">
-            </div>
-            <p class="help">
-              The image will be used only for local OCR/verification and is not intended to be stored.
+        <section id="intake-view" class="is-hidden">
+          <div id="intake-context" class="intake-context mb-5">
+            <strong id="intake-context-title">New farmer profiling</strong>
+            <p id="intake-context-text" class="is-size-7 mt-1">
+              Submit the profile for Validator review. Approved records are added to the canonical database.
             </p>
           </div>
 
-          <div id="rsbsa-number-panel" class="field is-hidden">
-            <label class="label" for="rsbsa-no">RSBSA Number</label>
-            <div class="control">
-              <input id="rsbsa-no" class="input" type="text" autocomplete="off">
+          <form id="profiling-form">
+            <input id="reference-year" type="hidden">
+
+            <div class="box form-section">
+              <h2 class="title is-5">1. Farmer Information</h2>
+              <p class="required-note"><span class="required-mark" aria-hidden="true">*</span> Required field</p>
+
+              <div class="field">
+                <label class="label">RSBSA Registration Status <span class="required-mark" aria-hidden="true">*</span></label>
+                <div class="control">
+                  <label class="radio"><input type="radio" name="rsbsa_status" value="REGISTERED"> Registered</label><br>
+                  <label class="radio"><input type="radio" name="rsbsa_status" value="NOT_REGISTERED"> Not yet registered</label>
+                </div>
+              </div>
+
+              <div id="rsbsa-number-panel" class="field is-hidden">
+                <label class="label" for="rsbsa-no">RSBSA Number <span class="required-mark" aria-hidden="true">*</span></label>
+                <div class="control"><input id="rsbsa-no" class="input" type="text" autocomplete="off"></div>
+              </div>
+
+              <div class="columns is-multiline">
+                <div class="column is-3"><label class="label">First Name <span class="required-mark" aria-hidden="true">*</span></label><input id="first-name" class="input" required></div>
+                <div class="column is-3"><label class="label">Middle Name</label><input id="middle-name" class="input"></div>
+                <div class="column is-3"><label class="label">Last Name <span class="required-mark" aria-hidden="true">*</span></label><input id="last-name" class="input" required></div>
+                <div class="column is-3"><label class="label">Suffix</label><input id="suffix" class="input"></div>
+
+                <div class="column is-3"><label class="label">Sex <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="sex" required></select></div></div>
+                <div class="column is-3"><label class="label">Marital Status <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="marital-status" required></select></div></div>
+                <div class="column is-3"><label class="label">Contact Number <span class="required-mark" aria-hidden="true">*</span></label><input id="contact-no" class="input" type="tel" required></div>
+                <div class="column is-3"><label class="label">Alternate Contact</label><input id="alternate-contact-no" class="input" type="tel"></div>
+
+                <div class="column is-half"><label class="label">Email</label><input id="farmer-email" class="input" type="email"></div>
+                <div class="column is-half"><label class="label">Cooperative / Registered Association</label><input id="association-name" class="input"></div>
+              </div>
+
+              <h3 class="title is-6 mt-4">Residence Address</h3>
+              <div class="columns is-multiline">
+                <div class="column is-4"><label class="label">Province <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-province" required></select></div></div>
+                <div class="column is-4"><label class="label">Municipality / City <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-lgu" required></select></div></div>
+                <div class="column is-4"><label class="label">Barangay <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="res-barangay" required></select></div></div>
+                <div class="column is-3"><label class="label">Sitio / Purok / Zone</label><input id="res-sitio" class="input"></div>
+                <div class="column is-3"><label class="label">Street / Road</label><input id="res-street" class="input"></div>
+                <div class="column is-3"><label class="label">House / Lot / Block</label><input id="res-house" class="input"></div>
+                <div class="column is-3"><label class="label">Landmark / Detail</label><input id="res-landmark" class="input"></div>
+              </div>
+
+              <div id="rsbsa-confirm-panel" class="field is-hidden">
+                <label class="checkbox">
+                  <input id="rsbsa-confirmed" type="checkbox">
+                  I have reviewed the RSBSA number entered above. <span class="required-mark" aria-hidden="true">*</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="box form-section">
+              <h2 class="title is-5">2. Farm Information</h2>
+              <input id="existing-farm-id" type="hidden">
+              <div class="columns is-multiline">
+                <div class="column is-4"><label class="label">Farm Name / Local ID</label><input id="farm-name" class="input"></div>
+                <div class="column is-4"><label class="label">Tenure <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="tenure" required></select></div></div>
+                <div class="column is-4"><label class="label">Total Farm Area (ha) <span class="required-mark" aria-hidden="true">*</span></label><input id="total-farm-area" class="input" type="number" min="0" step="0.0001" required></div>
+                <div class="column is-12"><label class="label">Farm Address / Local Description <span class="required-mark" aria-hidden="true">*</span></label><input id="farm-address" class="input" required></div>
+
+                <div class="column is-4"><label class="label">Province <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-province" required></select></div></div>
+                <div class="column is-4"><label class="label">Municipality / City <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-lgu" required></select></div></div>
+                <div class="column is-4"><label class="label">Barangay <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="farm-barangay" required></select></div></div>
+                <div class="column is-4"><label class="label">Topography <span class="required-mark" aria-hidden="true">*</span></label><div class="select is-fullwidth"><select id="topography" required></select></div></div>
+                <div class="column is-4"><label class="label">Distance to Road Access (km) <span class="required-mark" aria-hidden="true">*</span></label><input id="road-distance" class="input" type="number" min="0" step="0.01" required></div>
+                <div class="column is-4">
+                  <label class="label">Location <span class="required-mark" aria-hidden="true">*</span></label>
+                  <button id="use-device-location" class="button is-light is-fullwidth" type="button">Use Device GPS</button>
+                </div>
+              </div>
+
+              <div id="farm-map" class="mb-3"></div>
+              <div class="columns">
+                <div class="column"><label class="label">Latitude <span class="required-mark" aria-hidden="true">*</span></label><input id="latitude" class="input" type="number" step="any" readonly required></div>
+                <div class="column"><label class="label">Longitude <span class="required-mark" aria-hidden="true">*</span></label><input id="longitude" class="input" type="number" step="any" readonly required></div>
+                <input id="location-method" type="hidden" value="MAP_PIN">
+              </div>
+
+              <div class="field">
+                <label class="label">Source of Water <span class="required-mark" aria-hidden="true">*</span> <span class="has-text-grey is-size-7">(select all that apply)</span></label>
+                <div id="water-source-options" class="checkbox-grid"></div>
+              </div>
+            </div>
+
+            <div class="box form-section">
+              <h2 class="title is-5">3. Coffee / Cacao Profile <span class="required-mark" aria-hidden="true">*</span></h2>
+              <p class="help mb-4">Tree counts are recorded separately per commodity per farm.</p>
+
+              <div id="commodity-sections"></div>
+            </div>
+
+            <div class="box form-section">
+              <h2 class="title is-5">4. Facilities and Interventions</h2>
+
+              <div class="subsection">
+                <div class="level is-mobile">
+                  <div class="level-left"><h3 class="title is-6 mb-0">Post-harvest Facilities / Equipment</h3></div>
+                  <div class="level-right"><button id="add-facility" class="button is-small is-light" type="button">Add Facility</button></div>
+                </div>
+                <div id="facility-rows" class="repeatable-list"></div>
+              </div>
+
+              <div class="subsection">
+                <div class="level is-mobile">
+                  <div class="level-left"><h3 class="title is-6 mb-0">Interventions Received</h3></div>
+                  <div class="level-right"><button id="add-intervention" class="button is-small is-light" type="button">Add Received</button></div>
+                </div>
+                <div id="intervention-rows" class="repeatable-list"></div>
+              </div>
+
+              <div class="subsection">
+                <div class="level is-mobile">
+                  <div class="level-left"><h3 class="title is-6 mb-0">Interventions Needed</h3></div>
+                  <div class="level-right"><button id="add-need" class="button is-small is-light" type="button">Add Need</button></div>
+                </div>
+                <div id="need-rows" class="repeatable-list"></div>
+              </div>
+            </div>
+
+            <div class="box form-section">
+              <h2 class="title is-5">5. Review and Submit</h2>
+              <p class="mb-4">Submission does not immediately change the official farmer database. It will be sent to a Validator first.</p>
+              <div class="submit-actions">
+                <button id="preview-submission" class="button is-light action-secondary" type="button">Review Summary</button>
+                <button id="submit-profile" class="button is-primary action-primary" type="submit">Submit for Validation</button>
+                <button id="start-new-profile" class="button is-light action-secondary is-hidden" type="button">Start New Profile</button>
+              </div>
+              <div id="review-summary" class="review-summary is-hidden"></div>
+            </div>
+          </form>
+        </section>
+
+        <section id="invitation-view" class="is-hidden">
+          <div class="box form-section">
+            <h2 class="title is-5 mb-2">Existing Farmer Profiling Links</h2>
+            <p class="mb-4">Search an approved farmer, choose the profiling purpose, and generate a personalized secure link.</p>
+
+            <div class="field">
+              <label class="label" for="invitation-farmer-search">Search Farmer</label>
+              <div class="field has-addons">
+                <div class="control is-expanded">
+                  <input id="invitation-farmer-search" class="input" type="search" placeholder="Farmer ID, RSBSA, name, or contact number">
+                </div>
+                <div class="control">
+                  <button id="search-invitation-farmer" class="button is-primary" type="button">Search</button>
+                </div>
+              </div>
+              <p class="help">Enter at least 2 characters. Results are limited to farmers within your authorized geographic scope.</p>
+            </div>
+
+            <div id="invitation-search-results" class="is-hidden mb-5"></div>
+
+            <div id="invitation-selected-farmer" class="is-hidden">
+              <hr>
+              <h3 class="title is-6">Selected Farmer</h3>
+              <div id="invitation-farmer-summary" class="review-summary mb-4"></div>
+
+              <div class="columns is-multiline">
+                <div class="column is-3">
+                  <label class="label" for="invitation-reference-year">Reference Year</label>
+                  <input id="invitation-reference-year" class="input" type="number" min="2000" max="2100">
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-purpose">Purpose</label>
+                  <div class="select is-fullwidth">
+                    <select id="invitation-purpose">
+                      <option value="ANNUAL_PROFILE">Annual Profile</option>
+                      <option value="EXPANSION_UPDATE">Expansion Update</option>
+                      <option value="CORRECTION">Correction</option>
+                      <option value="NEW_FARM">New Farm</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-farm">Farm</label>
+                  <div class="select is-fullwidth">
+                    <select id="invitation-farm">
+                      <option value="">All / choose during profiling</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="column is-3">
+                  <label class="label" for="invitation-expiry">Expiry (optional)</label>
+                  <input id="invitation-expiry" class="input" type="date">
+                </div>
+              </div>
+
+              <div class="buttons">
+                <button id="generate-invitation" class="button is-primary" type="button">Generate Secure Link</button>
+                <button id="clear-invitation-farmer" class="button is-light action-secondary" type="button">Choose Another Farmer</button>
+              </div>
+
+              <div id="generated-invitation-panel" class="notification is-success is-light is-hidden">
+                <p class="has-text-weight-semibold mb-2">Secure profiling link generated</p>
+                <div class="field has-addons">
+                  <div class="control is-expanded">
+                    <input id="generated-invitation-url" class="input" type="text" readonly>
+                  </div>
+                  <div class="control">
+                    <button id="select-invitation-url" class="button is-light" type="button">Select Link</button>
+                  </div>
+                </div>
+                <p class="help">The raw token is shown only when the link is generated. Store/share the link through the approved staff channel.</p>
+              </div>
+
+              <h3 class="title is-6 mt-5">Recent Invitations</h3>
+              <div class="table-container">
+                <table class="table is-fullwidth is-hoverable">
+                  <thead><tr><th>Invitation</th><th>Purpose</th><th>Year</th><th>Farm</th><th>Status</th><th>Created</th><th></th></tr></thead>
+                  <tbody id="invitation-history-body">
+                    <tr><td colspan="7">Select a farmer to load invitations.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="dashboard-view" class="is-hidden" aria-labelledby="dashboard-title">
+          <div class="box dashboard-hero">
+            <div>
+              <p class="has-text-weight-semibold mb-2">Approved TEST records</p>
+              <h2 id="dashboard-title" class="title is-3 mb-2">Live farmer insights</h2>
+              <p class="mb-0">Figures come from this TEST Sheet, including fictional demo profiles. They are not field statistics. Pending submissions enter approved totals only after validation.</p>
+            </div>
+            <div class="dashboard-controls">
+              <div><label class="label" for="dashboard-year">Year</label><div class="select"><select id="dashboard-year"></select></div></div>
+              <div><label class="label" for="dashboard-commodity">Crop</label><div class="select"><select id="dashboard-commodity"><option value="">Coffee and cacao</option><option value="COFFEE">Coffee</option><option value="CACAO">Cacao</option></select></div></div>
+              <div><label class="label" for="dashboard-province">Province</label><div class="select"><select id="dashboard-province"><option value="">All provinces</option></select></div></div>
+              <div><label class="label" for="dashboard-lgu">Municipality / city</label><div class="select"><select id="dashboard-lgu"><option value="">All municipalities / cities</option></select></div></div>
+              <div><label class="label" for="dashboard-barangay">Barangay</label><div class="select"><select id="dashboard-barangay"><option value="">All barangays</option></select></div></div>
+              <button id="refresh-dashboard" class="button is-primary" type="button">Refresh</button>
+              <button id="clear-dashboard-filters" class="button is-light" type="button">Clear filters</button>
+            </div>
+          </div>
+          <p id="dashboard-status" class="help mb-4" role="status" aria-live="polite">Open the dashboard to load approved TEST records.</p>
+          <div id="dashboard-loading" class="dashboard-loading is-hidden" aria-hidden="true">
+            <span class="dashboard-spinner" aria-hidden="true"></span>
+            <span>Loading approved records… <span id="dashboard-loading-seconds">0</span>s elapsed</span>
+            <progress class="progress is-primary" max="100">Loading</progress>
+          </div>
+          <div class="dashboard-shell">
+            <nav class="dashboard-sidebar box" aria-label="Dashboard sections">
+              <p class="menu-label">Explore reports</p>
+              <button type="button" class="dashboard-section-button is-active" data-dashboard-section="overview" aria-current="page">Overview</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="geography">Geography</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="crops">Crops &amp; production</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="farms">Farms &amp; trees</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="people">Farmer profile</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="support">Support</button>
+              <button type="button" class="dashboard-section-button" data-dashboard-section="quality">Data quality</button>
+            </nav>
+            <div class="dashboard-content">
+              <div class="dashboard-mobile-nav"><label class="label" for="dashboard-section-select">Dashboard section</label><div class="select is-fullwidth"><select id="dashboard-section-select"><option value="overview">Overview</option><option value="geography">Geography</option><option value="crops">Crops &amp; production</option><option value="farms">Farms &amp; trees</option><option value="people">Farmer profile</option><option value="support">Support</option><option value="quality">Data quality</option></select></div></div>
+              <section id="dashboard-section-overview" class="dashboard-section" aria-label="Overview">
+                <div class="dashboard-kpis">
+                  <div class="box dashboard-kpi"><span>Farmers profiled</span><strong id="dashboard-farmers">—</strong><small>Distinct active farmers</small></div>
+                  <div class="box dashboard-kpi"><span>Farms profiled</span><strong id="dashboard-farms">—</strong><small>Latest approved farm profiles</small></div>
+                  <div class="box dashboard-kpi"><span>Planted area</span><strong id="dashboard-area">—</strong><small>Hectares of selected crops</small></div>
+                  <div class="box dashboard-kpi"><span>Bearing trees</span><strong id="dashboard-trees">—</strong><small>Reported bearing trees</small></div>
+                  <div class="box dashboard-kpi"><span>Production</span><strong id="dashboard-production">—</strong><small>Reported kilograms</small></div>
+                </div>
+                <div class="columns"><div class="column is-7"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crops"></div></div></div><div class="column is-5"><div class="box dashboard-panel"><h3 class="title is-5">Validation pipeline</h3><p class="dashboard-pending"><strong id="dashboard-pending">—</strong> pending submissions in this location</p><p class="help">Pending counts include all crops.</p></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Production trend</h3><div id="dashboard-trend"></div></div>
+              </section>
+              <section id="dashboard-section-geography" class="dashboard-section is-hidden" aria-label="Geography">
+                <div class="box dashboard-panel"><div class="dashboard-panel-head"><div><h3 class="title is-5 mb-1">Municipality choropleth</h3><p class="help">Darker areas have higher values for the selected metric. Select an area or a table row to filter.</p></div><div><label class="label" for="dashboard-map-metric">Map metric</label><div class="select"><select id="dashboard-map-metric"><option value="farmerCount">Farmers</option><option value="areaHa">Planted area (ha)</option><option value="bearingTrees">Bearing trees</option><option value="productionKg">Production (kg)</option></select></div></div></div><div id="dashboard-map" role="img" aria-label="Municipality choropleth of approved records; exact values and keyboard controls are in the table below"></div><div id="dashboard-map-legend" class="dashboard-map-legend" aria-live="polite"></div><p id="dashboard-map-note" class="help"></p><p class="help">Municipality boundaries: geoBoundaries / NAMRIA, PSA and OCHA Philippines (2020), CC BY 3.0 IGO. Map tiles: © OpenStreetMap contributors.</p></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Municipality comparison</h3><div class="table-container"><table class="table is-fullwidth is-striped"><thead><tr><th>Municipality / city</th><th>Farmers</th><th>Farms</th><th>Area (ha)</th><th>Bearing trees</th><th>Production (kg)</th></tr></thead><tbody id="dashboard-municipalities"></tbody></table></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Top barangays by production</h3><div id="dashboard-barangays"></div></div>
+              </section>
+              <section id="dashboard-section-crops" class="dashboard-section is-hidden" aria-label="Crops and production">
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Planted area by crop</h3><div id="dashboard-crop-area"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crop-production"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production mix</h3><div id="dashboard-production-share"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Reported production per planted hectare</h3><p class="help">Production divided by reported crop area for the selected year; use as a descriptive ratio, not a measured farm yield.</p><div id="dashboard-yield"></div></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Production over time</h3><div id="dashboard-crop-trend"></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Farms by reported variety</h3><p class="help">Variety counts are farms, not trees. A farm may report more than one variety.</p><div id="dashboard-varieties"></div></div>
+              </section>
+              <section id="dashboard-section-farms" class="dashboard-section is-hidden" aria-label="Farms and trees">
+                <div class="dashboard-kpis"><div class="box dashboard-kpi"><span>Non-bearing trees</span><strong id="dashboard-nonbearing">—</strong></div><div class="box dashboard-kpi"><span>Newly planted trees</span><strong id="dashboard-newtrees">—</strong><small>May also be non-bearing</small></div><div class="box dashboard-kpi"><span>Tree mortality</span><strong id="dashboard-mortality">—</strong></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Bearing and non-bearing trees</h3><div id="dashboard-tree-maturity"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by terrain</h3><div id="dashboard-topographies"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farm tenure</h3><div id="dashboard-tenure"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Primary water source</h3><div id="dashboard-water"></div></div></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Plantings by year</h3><div id="dashboard-planting-years"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Facility utilization</h3><div id="dashboard-facilities"></div></div></div></div>
+              </section>
+              <section id="dashboard-section-people" class="dashboard-section is-hidden" aria-label="Farmer profile">
+                <p class="help mb-3">Aggregate profile characteristics only. No names, contacts, RSBSA numbers, or addresses appear here.</p>
+                <div class="dashboard-kpis"><div class="box dashboard-kpi"><span>Association reported</span><strong id="dashboard-associations">—</strong><small>Of selected farmers</small></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">RSBSA status</h3><div id="dashboard-rsbsa-statuses"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Sex</h3><div id="dashboard-sexes"></div></div></div></div>
+                <div class="box dashboard-panel"><h3 class="title is-5">Marital status</h3><div id="dashboard-marital"></div></div>
+              </section>
+              <section id="dashboard-section-support" class="dashboard-section is-hidden" aria-label="Support">
+                <div class="box dashboard-panel"><h3 class="title is-5">Reported needs and received support</h3><p class="help">Counts are distinct farmers by type. Received support is not proof that a particular need was fulfilled.</p><div id="dashboard-support"></div></div>
+                <div class="columns"><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Support needs reported</h3><div id="dashboard-needs"></div></div></div><div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Need priorities</h3><div id="dashboard-priorities"></div></div></div></div>
+              </section>
+              <section id="dashboard-section-quality" class="dashboard-section is-hidden" aria-label="Data quality">
+                <div class="box dashboard-panel"><h3 class="title is-5">Reporting coverage</h3><p class="help">Counts below are among selected approved farm profiles.</p><div id="dashboard-completeness"></div></div>
+                <p class="help">Municipalities without a boundary in this demo remain in the comparison table. Exact farm coordinates are never returned to this dashboard.</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="validator-view" class="is-hidden">
+          <div class="box form-section">
+            <div class="level is-mobile">
+              <div class="level-left">
+                <div>
+                  <h2 class="title is-5 mb-1">Validator Queue</h2>
+                  <p class="is-size-7 has-text-grey">All new, annual, and expansion submissions require Validator review.</p>
+                </div>
+              </div>
+              <div class="level-right"><button id="refresh-validator" class="button is-small is-light" type="button">Refresh</button></div>
+            </div>
+
+            <div class="table-container">
+              <table class="table is-fullwidth is-hoverable">
+                <thead><tr><th>Submission</th><th>Farmer</th><th>Type</th><th>Year</th><th>Classification</th><th>Submitted</th><th></th></tr></thead>
+                <tbody id="validator-queue-body"></tbody>
+              </table>
             </div>
           </div>
 
-          <div class="columns is-multiline">
-            <div class="column is-half">
-              <label class="label">First Name</label>
-              <input id="first-name" class="input" type="text">
+          <div id="validator-review-panel" class="box is-hidden">
+            <h2 class="title is-5">Submission Review</h2>
+            <div id="validator-summary" class="content"></div>
+
+            <div id="identity-review-section" class="is-hidden">
+              <hr>
+              <h3 class="title is-6">Identity Reviews</h3>
+              <div id="identity-review-list"></div>
             </div>
-            <div class="column is-half">
-              <label class="label">Last Name</label>
-              <input id="last-name" class="input" type="text">
+
+            <hr>
+            <div class="field">
+              <label class="label" for="validator-remarks">Validator Remarks</label>
+              <textarea id="validator-remarks" class="textarea" rows="3" placeholder="Required for Return and Spam/Invalid. Optional for Approve or Duplicate."></textarea>
             </div>
-            <div class="column is-half">
-              <label class="label">Middle Name</label>
-              <input id="middle-name" class="input" type="text">
+
+            <div class="field">
+              <label class="label" for="duplicate-reference">Duplicate Reference</label>
+              <input id="duplicate-reference" class="input" type="text" placeholder="Submission ID or Farmer ID, e.g. SUB-2026-000001 or FMR-2026-000001">
+              <p class="help">Required only when marking the submission as a duplicate.</p>
             </div>
-            <div class="column is-half">
-              <label class="label">Suffix</label>
-              <input id="suffix" class="input" type="text">
+
+            <div class="buttons validator-actions">
+              <button id="approve-submission" class="button is-success" type="button">Approve</button>
+              <button id="return-submission" class="button is-warning" type="button">Return for Correction</button>
+              <button id="duplicate-submission" class="button is-light action-secondary" type="button">Mark as Duplicate</button>
+              <button id="spam-submission" class="button is-danger is-light" type="button">Mark as Spam / Invalid</button>
             </div>
           </div>
-
-          <div class="field">
-            <label class="checkbox">
-              <input id="rsbsa-confirmed" type="checkbox">
-              I have reviewed the RSBSA information entered/extracted above.
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="box">
-        <h2 class="title is-6">Development status</h2>
-        <p>
-          This is the initial Apps Script shell. Farmer, farm, OCR, validation,
-          and dashboard modules will be wired to the V1 schema incrementally.
-        </p>
+        </section>
       </div>
     </div>
   </section>
 
+  <script>
+    window.__INITIAL_INVITATION_TOKEN__ = <?!= JSON.stringify(initialInvitationToken) ?>;
+  </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
+  <?!= include('MunicipalityBoundaries'); ?>
   <?!= include('Scripts'); ?>
 </body>
 </html>
