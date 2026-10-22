@@ -309,6 +309,11 @@
             </div>
           </div>
           <p id="dashboard-status" class="help mb-4" role="status" aria-live="polite">Open the dashboard to load approved TEST records.</p>
+          <div id="dashboard-loading" class="dashboard-loading is-hidden" aria-hidden="true">
+            <span class="dashboard-spinner" aria-hidden="true"></span>
+            <span>Loading approved records… <span id="dashboard-loading-seconds">0</span>s elapsed</span>
+            <progress class="progress is-primary" max="100">Loading</progress>
+          </div>
           <div class="dashboard-shell">
             <nav class="dashboard-sidebar box" aria-label="Dashboard sections">
               <p class="menu-label">Explore reports</p>

@@ -221,7 +221,17 @@
     const year = Number(yearSelect.value) || Number(appState.bootstrap.app.currentYear);
     const status = document.getElementById('dashboard-status');
     const refresh = document.getElementById('refresh-dashboard');
+    const loading = document.getElementById('dashboard-loading');
+    const seconds = document.getElementById('dashboard-loading-seconds');
     appState.dashboardLoading = true;
+    const startedAt = Date.now();
+    seconds.textContent = '0';
+    loading.classList.remove('is-hidden');
+    loading.setAttribute('aria-hidden', 'false');
+    document.getElementById('dashboard-view').setAttribute('aria-busy', 'true');
+    const elapsedTimer = setInterval(function() {
+      seconds.textContent = String(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
     refresh.disabled = true;
     ['dashboard-year', 'dashboard-commodity', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
       document.getElementById(id).disabled = true;
@@ -263,6 +273,10 @@
       status.textContent = 'Unable to refresh the dashboard. Please try again.';
       handleServerError(error);
     } finally {
+      clearInterval(elapsedTimer);
+      loading.classList.add('is-hidden');
+      loading.setAttribute('aria-hidden', 'true');
+      document.getElementById('dashboard-view').setAttribute('aria-busy', 'false');
       appState.dashboardLoading = false;
       refresh.disabled = false;
       ['dashboard-year', 'dashboard-commodity', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {

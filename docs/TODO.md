@@ -249,6 +249,8 @@ In progress now:
 
 - [x] Standalone synthetic dashboard preview for the October 23 presentation; explicitly not a live Sheet report.
 - [ ] Further reduce TEST dashboard load time. Version 35 reuses one spreadsheet connection per request, reads each tab once with one value fetch, draws the map only when shown, and refreshes every two minutes while visible. A live warm refresh still took about 10 seconds; the remaining cross-tab reads need a larger reporting-view change without weakening staff scope or showing stale data as fresh.
+- [x] Show a visible dashboard loader with elapsed seconds in TEST version 36; clear it on success or failure. The current single server request cannot report a truthful completion percentage.
+- [ ] Investigate the intermittent TEST Apps Script storage error observed on October 22 during a long dashboard load; a retry succeeded. Include this in demo rehearsal and keep the offline preview ready.
 - [x] Add chart variety in TEST version 34: a labeled production line, crop-area donut, and proportional breakdowns for terrain, tenure, water, facilities, and farmer characteristics. Keep ranked bars where comparison is clearer.
 - [ ] In-app staff dashboard backed by approved canonical records under the final institutional deployment. No Looker Studio dependency.
 - [ ] Flattened reporting views.
