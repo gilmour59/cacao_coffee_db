@@ -8,6 +8,7 @@ const APP_CALLS = Object.freeze({
   listProfilingInvitationsForFarmer: listProfilingInvitationsForFarmer,
   createProfilingInvitation: createProfilingInvitation,
   revokeProfilingInvitation: revokeProfilingInvitation,
+  getDashboardData: getDashboardData,
   listPendingSubmissions: listPendingSubmissions,
   getSubmissionForReview: getSubmissionForReview,
   resolveIdentityReview: resolveIdentityReview,

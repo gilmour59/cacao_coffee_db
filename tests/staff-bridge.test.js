@@ -18,7 +18,7 @@ function makeBridge() {
     'getBootstrapData', 'getInvitationContext', 'submitNewFarmerProfile',
     'submitExistingFarmerProfile', 'submitEncoderProfile',
     'searchActiveFarmersForInvitation', 'listProfilingInvitationsForFarmer',
-    'createProfilingInvitation', 'revokeProfilingInvitation', 'listPendingSubmissions',
+    'createProfilingInvitation', 'revokeProfilingInvitation', 'getDashboardData', 'listPendingSubmissions',
     'getSubmissionForReview', 'resolveIdentityReview', 'approveSubmission',
     'returnSubmission', 'voidSubmission'
   ];

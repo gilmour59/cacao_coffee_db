@@ -41,13 +41,28 @@
       <div id="app-content" class="is-hidden">
         <div id="mode-tabs" class="tabs is-boxed mb-5">
           <ul>
-            <li id="intake-tab" class="is-active"><a data-mode="intake">Profiling Form</a></li>
+            <li id="home-tab" class="is-active"><a data-mode="home">Home</a></li>
+            <li id="intake-tab"><a data-mode="intake">Profiling Form</a></li>
             <li id="invitation-tab" class="is-hidden"><a data-mode="invitations">Existing Farmer Links</a></li>
             <li id="validator-tab" class="is-hidden"><a data-mode="validator">Validator Queue</a></li>
+            <li id="dashboard-tab" class="is-hidden"><a data-mode="dashboard">Live Dashboard</a></li>
           </ul>
         </div>
 
-        <section id="intake-view">
+        <section id="home-view">
+          <div class="home-hero box">
+            <p class="has-text-weight-semibold mb-2">Coffee and cacao profiling</p>
+            <h2 class="title is-2 mb-3">A clearer picture of farms and the support farmers need.</h2>
+            <p class="is-size-5 mb-5">Submit a profile, have it checked by authorized staff, and turn approved records into useful local reporting.</p>
+            <button id="home-start-intake" class="button is-primary is-medium" type="button">Start New Farmer Profile</button>
+          </div>
+          <div class="columns">
+            <div class="column"><div class="box home-card"><h3 class="title is-5">Already profiled?</h3><p>Open the personal secure link sent by authorized staff. The link loads your permitted farmer context; no separate farmer account is needed.</p></div></div>
+            <div class="column"><div class="box home-card"><h3 class="title is-5">Staff workflow</h3><p>Authorized staff can create links, review submissions, and see approved results in the live dashboard.</p><button id="home-open-dashboard" class="button is-link is-light mt-3 is-hidden" type="button">Open Live Dashboard</button></div></div>
+          </div>
+        </section>
+
+        <section id="intake-view" class="is-hidden">
           <div id="intake-context" class="intake-context mb-5">
             <strong id="intake-context-title">New farmer profiling</strong>
             <p id="intake-context-text" class="is-size-7 mt-1">
@@ -274,6 +289,38 @@
               </div>
             </div>
           </div>
+        </section>
+
+        <section id="dashboard-view" class="is-hidden" aria-labelledby="dashboard-title">
+          <div class="box dashboard-hero">
+            <div>
+              <p class="has-text-weight-semibold mb-2">Approved TEST records</p>
+              <h2 id="dashboard-title" class="title is-3 mb-2">Live farmer insights</h2>
+              <p class="mb-0">Figures come from this TEST Sheet, including fictional demo profiles. They are not field statistics. Pending submissions enter approved totals only after validation.</p>
+            </div>
+            <div class="dashboard-controls">
+              <label class="label" for="dashboard-year">Reference year</label>
+              <div class="select"><select id="dashboard-year"></select></div>
+              <button id="refresh-dashboard" class="button is-primary" type="button">Refresh</button>
+            </div>
+          </div>
+          <p id="dashboard-status" class="help mb-4" role="status" aria-live="polite">Open the dashboard to load approved TEST records.</p>
+          <div class="dashboard-kpis">
+            <div class="box dashboard-kpi"><span>Farmers profiled</span><strong id="dashboard-farmers">—</strong><small>Distinct active farmers in this year</small></div>
+            <div class="box dashboard-kpi"><span>Planted area</span><strong id="dashboard-area">—</strong><small>Hectares of coffee and cacao</small></div>
+            <div class="box dashboard-kpi"><span>Bearing trees</span><strong id="dashboard-trees">—</strong><small>Latest approved farm profiles</small></div>
+            <div class="box dashboard-kpi"><span>Production</span><strong id="dashboard-production">—</strong><small>Reported kilograms</small></div>
+          </div>
+          <div class="columns mt-1">
+            <div class="column is-7"><div class="box dashboard-panel"><h3 class="title is-5">Production by crop</h3><div id="dashboard-crops"></div></div></div>
+            <div class="column is-5"><div class="box dashboard-panel"><h3 class="title is-5">Validation pipeline</h3><p class="dashboard-pending"><strong id="dashboard-pending">—</strong> pending submissions awaiting staff review</p><p id="dashboard-rsbsa" class="help"></p></div></div>
+          </div>
+          <div class="columns">
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Production over time</h3><div id="dashboard-trend"></div></div></div>
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Top barangays by production</h3><div id="dashboard-barangays"></div></div></div>
+          </div>
+          <div class="box dashboard-panel"><h3 class="title is-5">Support needs reported</h3><div id="dashboard-needs"></div></div>
+          <p class="help">Staff-only summary. No names, contact details, secure tokens, or precise farm coordinates are shown.</p>
         </section>
 
         <section id="validator-view" class="is-hidden">

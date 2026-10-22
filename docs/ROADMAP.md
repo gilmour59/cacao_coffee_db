@@ -82,17 +82,17 @@ Milestone: **Validator can safely distinguish routine annual change from expansi
 ## Phase 4 — Dashboard/reporting — Oct 15–16
 
 - [x] Build a standalone, clearly labeled synthetic dashboard preview for the farmer presentation. It is not connected to TEST or PROD records.
-- [ ] Build the custom staff dashboard inside the app after institutional hosting is ready; use approved canonical records and server-side role/geographic checks.
+- [x] Build the custom staff dashboard inside the TEST app using approved canonical records and server-side role/geographic checks. Live TEST smoke check passed on Oct 22; institutional ownership is still pending.
 - [ ] Prepare flattened reporting views.
-- [ ] Farmer totals based on canonical active farmers.
-- [ ] Coffee/Cacao area.
-- [ ] Tree counts by year.
-- [ ] Production by year.
+- [x] Profiled farmer totals based on active canonical farmers with an approved round in the selected year.
+- [x] Coffee/Cacao planted area in the selected year.
+- [x] Bearing tree counts in the selected year.
+- [x] Production trend by year.
 - [ ] Province/Municipality/Barangay filters.
 - [ ] Variety/year filters.
-- [ ] RSBSA registration indicators.
+- [x] RSBSA registration indicator.
 - [ ] Farm point map.
-- [ ] Intervention-needs summaries.
+- [x] Intervention-needs summaries.
 - [ ] Optional annual change/expansion indicators.
 - [ ] Export-friendly views.
 
@@ -117,7 +117,7 @@ Current checkpoint: first new-farmer vertical slice has passed submit → duplic
 - [ ] Concurrent submission tests.
 - [ ] Manual RSBSA typo/transposition and collision tests.
 - [ ] Map and PSGC validation.
-- [ ] Realistic demo dataset.
+- [x] Seed 24 clearly synthetic Pototan profiles in TEST for the Oct 23 presentation. PROD remains empty/unchanged.
 
 ## Feature freeze — Oct 19
 
@@ -147,7 +147,7 @@ No new major features after feature freeze. Only migration, defects, data/refere
 
 ## Oct 23 — Farmer presentation
 
-Demonstrate the TEST intake and staff workflow where rehearsed. Show the synthetic dashboard as a separate reporting preview, with its fictional-data label visible; it does not update from app submissions.
+Use the TEST landing page and staff dashboard together. The dashboard reads approved canonical TEST Sheet rows and refreshes while open. The current chart baseline includes 24 fictional seed profiles; do not describe it as actual farmer statistics. Show a supervised synthetic submission and validator approval only after a fresh rehearsal. Keep the testing disclaimer visible.
 
 ```text
 NEW FARMER

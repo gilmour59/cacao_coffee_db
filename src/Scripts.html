@@ -3,7 +3,7 @@
     bootstrap: null,
     invitationToken: window.__INITIAL_INVITATION_TOKEN__ || '',
     invitationContext: null,
-    currentMode: 'intake',
+    currentMode: 'home',
     selectedSubmissionId: '',
     selectedInvitationFarmer: null,
     locations: {
@@ -14,7 +14,8 @@
     marker: null,
     submissionCompleted: false,
     validatorActionBusy: false,
-    toastTimer: null
+    toastTimer: null,
+    dashboardLoading: false
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -23,6 +24,10 @@
     serverCall('getBootstrapData')
       .then(handleBootstrapSuccess)
       .catch(handleServerError);
+
+    setInterval(function() {
+      if (appState.currentMode === 'dashboard') loadDashboard();
+    }, 30000);
   });
 
   function serverCall(functionName) {
@@ -48,6 +53,10 @@
       input.addEventListener('change', handleRsbsaStatusChange);
     });
     document.getElementById('profiling-form').addEventListener('submit', submitProfilingForm);
+    document.getElementById('home-start-intake').addEventListener('click', function() { switchMode('intake'); });
+    document.getElementById('home-open-dashboard').addEventListener('click', function() { switchMode('dashboard'); });
+    document.getElementById('refresh-dashboard').addEventListener('click', loadDashboard);
+    document.getElementById('dashboard-year').addEventListener('change', loadDashboard);
     document.getElementById('preview-submission').addEventListener('click', previewSubmission);
     document.getElementById('start-new-profile').addEventListener('click', resetForNewProfile);
 
@@ -108,6 +117,7 @@
     }
 
     if (appState.invitationToken) {
+      switchMode('intake');
       loadInvitationContext(appState.invitationToken);
     }
   }
@@ -120,6 +130,8 @@
     document.getElementById('staff-name').textContent = staff.full_name || staff.email || 'Authorized staff';
     document.getElementById('staff-role').textContent = staff.role || '';
     document.getElementById('invitation-tab').classList.remove('is-hidden');
+    document.getElementById('dashboard-tab').classList.remove('is-hidden');
+    document.getElementById('home-open-dashboard').classList.remove('is-hidden');
 
     if (staff.role === 'ADMIN' || staff.role === 'VALIDATOR') {
       document.getElementById('validator-tab').classList.remove('is-hidden');
@@ -127,6 +139,14 @@
   }
 
   function switchMode(mode) {
+    if (mode === 'dashboard') {
+      const staff = appState.bootstrap && appState.bootstrap.currentStaff;
+      if (!staff) {
+        showMessage('The live dashboard requires authorized staff access.', 'is-warning');
+        return;
+      }
+    }
+
     if (mode === 'validator') {
       const staff = appState.bootstrap && appState.bootstrap.currentStaff;
       if (!staff || (staff.role !== 'ADMIN' && staff.role !== 'VALIDATOR')) {
@@ -144,18 +164,76 @@
     }
 
     appState.currentMode = mode;
+    document.getElementById('home-view').classList.toggle('is-hidden', mode !== 'home');
     document.getElementById('intake-view').classList.toggle('is-hidden', mode !== 'intake');
     document.getElementById('invitation-view').classList.toggle('is-hidden', mode !== 'invitations');
     document.getElementById('validator-view').classList.toggle('is-hidden', mode !== 'validator');
+    document.getElementById('dashboard-view').classList.toggle('is-hidden', mode !== 'dashboard');
+    document.getElementById('home-tab').classList.toggle('is-active', mode === 'home');
     document.getElementById('intake-tab').classList.toggle('is-active', mode === 'intake');
     document.getElementById('invitation-tab').classList.toggle('is-active', mode === 'invitations');
     document.getElementById('validator-tab').classList.toggle('is-active', mode === 'validator');
+    document.getElementById('dashboard-tab').classList.toggle('is-active', mode === 'dashboard');
 
     if (mode === 'validator') {
       loadValidatorQueue();
+    } else if (mode === 'dashboard') {
+      loadDashboard();
     } else if (appState.map) {
       setTimeout(function() { appState.map.invalidateSize(); }, 50);
     }
+  }
+
+  async function loadDashboard() {
+    if (appState.dashboardLoading) return;
+    const yearSelect = document.getElementById('dashboard-year');
+    const year = Number(yearSelect.value) || Number(appState.bootstrap.app.currentYear);
+    const status = document.getElementById('dashboard-status');
+    const refresh = document.getElementById('refresh-dashboard');
+    appState.dashboardLoading = true;
+    refresh.disabled = true;
+    status.textContent = 'Refreshing approved TEST records…';
+    try {
+      const data = await serverCall('getDashboardData', year);
+      yearSelect.innerHTML = data.years.map(function(value) {
+        return '<option value="' + value + '">' + value + '</option>';
+      }).join('');
+      yearSelect.value = String(data.year);
+      renderDashboard(data);
+      status.textContent = 'Updated ' + new Date(data.refreshedAt).toLocaleTimeString() + ' · Refreshes every 30 seconds while open.';
+    } catch (error) {
+      status.textContent = 'Unable to refresh the dashboard. Please try again.';
+      handleServerError(error);
+    } finally {
+      appState.dashboardLoading = false;
+      refresh.disabled = false;
+    }
+  }
+
+  function renderDashboard(data) {
+    const number = function(value) { return Math.round(Number(value || 0)).toLocaleString(); };
+    const bars = function(rows, field, labelField, suffix) {
+      if (!rows.length) return '<p class="has-text-grey">No approved data for this selection yet.</p>';
+      const max = Math.max(1, ...rows.map(function(row) { return Number(row[field] || 0); }));
+      return rows.map(function(row) {
+        const value = Number(row[field] || 0);
+        return '<div class="dashboard-bar-row"><div><span>' + escapeHtml(row[labelField]) +
+          '</span><strong>' + number(value) + suffix + '</strong></div>' +
+          '<progress class="progress is-primary" value="' + value + '" max="' + max + '"></progress></div>';
+      }).join('');
+    };
+    document.getElementById('dashboard-farmers').textContent = number(data.farmerCount);
+    document.getElementById('dashboard-area').textContent = Number(data.areaHa || 0).toFixed(1) + ' ha';
+    document.getElementById('dashboard-trees').textContent = number(data.bearingTrees);
+    document.getElementById('dashboard-production').textContent = number(data.productionKg) + ' kg';
+    document.getElementById('dashboard-pending').textContent = number(data.pendingCount);
+    document.getElementById('dashboard-rsbsa').textContent = number(data.rsbsaRegisteredCount) + ' of ' + number(data.farmerCount) + ' profiled farmers marked RSBSA registered.';
+    document.getElementById('dashboard-crops').innerHTML = bars((data.commodities || []).map(function(row) {
+      return { name: prettyCode(row.code) + ' · ' + Number(row.areaHa || 0).toFixed(1) + ' ha', productionKg: row.productionKg };
+    }), 'productionKg', 'name', ' kg');
+    document.getElementById('dashboard-trend').innerHTML = bars(data.trend || [], 'productionKg', 'year', ' kg');
+    document.getElementById('dashboard-barangays').innerHTML = bars(data.barangays || [], 'productionKg', 'name', ' kg');
+    document.getElementById('dashboard-needs').innerHTML = bars(data.needs || [], 'farmerCount', 'name', ' farmers');
   }
 
   function getRefs(name) {
