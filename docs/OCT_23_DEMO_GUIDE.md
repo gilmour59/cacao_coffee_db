@@ -5,7 +5,7 @@
 - [Farmer landing page](https://script.google.com/macros/s/AKfycbxXQYYjRgumA18liMmxwUSbj_K_A0Lm4f9-n3kYVSU5Z22otMyFI51KzHvFYTrWnAWX/exec): public new-farmer entry. A personal invitation link opens its permitted profile context directly.
 - [Staff app](https://script.google.com/macros/s/AKfycbwWozzUZEtZmYuX4gP9KQgZRc-fPmNwDyqU-wwcKdOlUl0NnW0z-0ZfUp6uwZ7VxDiR/exec): Google sign-in for authorized staff. Open **Live Dashboard** from Home.
 
-Both URLs use TEST version 27. The private TEST Sheet holds the records. PROD was not changed.
+Both URLs use TEST version 28. The private TEST Sheet holds the records. PROD was not changed.
 
 ## Suggested five-minute walkthrough
 
