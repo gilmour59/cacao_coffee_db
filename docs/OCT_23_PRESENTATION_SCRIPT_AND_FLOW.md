@@ -8,7 +8,7 @@
 
 ## Before people arrive
 
-1. Open the [farmer landing page](https://script.google.com/macros/s/AKfycbxXQYYjRgumA18liMmxwUSbj_K_A0Lm4f9-n3kYVSU5Z22otMyFI51KzHvFYTrWnAWX/exec) in one browser tab and the [staff app](https://script.google.com/macros/s/AKfycbwWozzUZEtZmYuX4gP9KQgZRc-fPmNwDyqU-wwcKdOlUl0NnW0z-0ZfUp6uwZ7VxDiR/exec) in another. Sign in to the staff app with an authorized TEST account before presenting.
+1. Use **two browser windows**: open the [farmer landing page](https://script.google.com/macros/s/AKfycbxXQYYjRgumA18liMmxwUSbj_K_A0Lm4f9-n3kYVSU5Z22otMyFI51KzHvFYTrWnAWX/exec) in a private/incognito window so the audience sees the public farmer view; open the [staff app](https://script.google.com/macros/s/AKfycbwWozzUZEtZmYuX4gP9KQgZRc-fPmNwDyqU-wwcKdOlUl0NnW0z-0ZfUp6uwZ7VxDiR/exec) in your regular signed-in window with the TEST admin account. The admin account can show the Validator Queue and dashboard. A third profile is needed only if you choose to demonstrate the Validator or Encoder account separately; this script does not require it.
 2. In the staff app, open **Live Dashboard** and select **2026**. Confirm the numbers and charts load. Leave the testing notice visible when introducing the app.
 3. Check the projector, internet, browser zoom, and that personal invitation links or real farmer details are not on screen. Keep the existing [demo guide](OCT_23_DEMO_GUIDE.md) available as a backup reference.
 4. Use a QR code only for the base farmer TEST URL if one is ready. Do not display or shorten a personal secure link.
