@@ -57,6 +57,15 @@
     document.getElementById('home-open-dashboard').addEventListener('click', function() { switchMode('dashboard'); });
     document.getElementById('refresh-dashboard').addEventListener('click', loadDashboard);
     document.getElementById('dashboard-year').addEventListener('change', loadDashboard);
+    ['dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+      document.getElementById(id).addEventListener('change', function() {
+        if (id === 'dashboard-province') {
+          document.getElementById('dashboard-lgu').value = '';
+          document.getElementById('dashboard-barangay').value = '';
+        } else if (id === 'dashboard-lgu') document.getElementById('dashboard-barangay').value = '';
+        loadDashboard();
+      });
+    });
     document.getElementById('preview-submission').addEventListener('click', previewSubmission);
     document.getElementById('start-new-profile').addEventListener('click', resetForNewProfile);
 
@@ -192,13 +201,38 @@
     const refresh = document.getElementById('refresh-dashboard');
     appState.dashboardLoading = true;
     refresh.disabled = true;
+    ['dashboard-year', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+      document.getElementById(id).disabled = true;
+    });
     status.textContent = 'Refreshing approved TEST records…';
     try {
-      const data = await serverCall('getDashboardData', year);
+      const data = await serverCall('getDashboardData', year, {
+        provinceCode: document.getElementById('dashboard-province').value,
+        lguCode: document.getElementById('dashboard-lgu').value,
+        barangayCode: document.getElementById('dashboard-barangay').value
+      });
       yearSelect.innerHTML = data.years.map(function(value) {
         return '<option value="' + value + '">' + value + '</option>';
       }).join('');
       yearSelect.value = String(data.year);
+      const selected = data.geography;
+      function setLocations(id, items, allLabel, value) {
+        const select = document.getElementById(id);
+        select.innerHTML = '<option value="">' + allLabel + '</option>' + items.map(function(item) {
+          return '<option value="' + escapeHtml(item.code) + '">' + escapeHtml(item.name) + '</option>';
+        }).join('');
+        select.value = value;
+      }
+      setLocations('dashboard-province', data.locations.provinces, 'All provinces', selected.provinceCode);
+      setLocations('dashboard-lgu', data.locations.lgus.filter(function(item) {
+        return !selected.provinceCode || item.provinceCode === selected.provinceCode;
+      }), 'All municipalities / cities', selected.lguCode);
+      setLocations('dashboard-barangay', data.locations.barangays.filter(function(item) {
+        return (!selected.lguCode || item.lguCode === selected.lguCode) &&
+          (!selected.provinceCode || data.locations.lgus.some(function(l) {
+            return l.code === item.lguCode && l.provinceCode === selected.provinceCode;
+          }));
+      }), 'All barangays', selected.barangayCode);
       renderDashboard(data);
       status.textContent = 'Updated ' + new Date(data.refreshedAt).toLocaleTimeString() + ' · Refreshes every 30 seconds while open.';
     } catch (error) {
@@ -207,6 +241,9 @@
     } finally {
       appState.dashboardLoading = false;
       refresh.disabled = false;
+      ['dashboard-year', 'dashboard-province', 'dashboard-lgu', 'dashboard-barangay'].forEach(function(id) {
+        document.getElementById(id).disabled = false;
+      });
     }
   }
 
@@ -218,7 +255,7 @@
       return rows.map(function(row) {
         const value = Number(row[field] || 0);
         return '<div class="dashboard-bar-row"><div><span>' + escapeHtml(row[labelField]) +
-          '</span><strong>' + number(value) + suffix + '</strong></div>' +
+          '</span><strong>' + number(value) + (value === 1 ? suffix.replace(/s$/, '') : suffix) + '</strong></div>' +
           '<progress class="progress is-primary" value="' + value + '" max="' + max + '"></progress></div>';
       }).join('');
     };
@@ -234,6 +271,10 @@
     document.getElementById('dashboard-trend').innerHTML = bars(data.trend || [], 'productionKg', 'year', ' kg');
     document.getElementById('dashboard-barangays').innerHTML = bars(data.barangays || [], 'productionKg', 'name', ' kg');
     document.getElementById('dashboard-needs').innerHTML = bars(data.needs || [], 'farmerCount', 'name', ' farmers');
+    document.getElementById('dashboard-topographies').innerHTML = bars(data.topographies || [], 'count', 'name', ' farms');
+    document.getElementById('dashboard-tenure').innerHTML = bars(data.tenure || [], 'count', 'name', ' farms');
+    document.getElementById('dashboard-water').innerHTML = bars(data.waterSources || [], 'count', 'name', ' farms');
+    document.getElementById('dashboard-varieties').innerHTML = bars(data.varieties || [], 'count', 'name', ' farms');
   }
 
   function getRefs(name) {

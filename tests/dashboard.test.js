@@ -31,6 +31,8 @@ function dashboardContext(authorized = true) {
       { profiling_round_id: 'R2', commodity_code: 'COFFEE', production_volume_kg: 120 },
       { profiling_round_id: 'RO', commodity_code: 'CACAO', production_volume_kg: 900 }
     ],
+    Ref_Provinces: [{ province_code: '603000000', province_name: 'Iloilo', is_active: true }],
+    Ref_LGUs: [{ lgu_code: '603037000', province_code: '603000000', lgu_name: 'Pototan', is_active: true }],
     Ref_Barangays: [{ barangay_code: 'B1', barangay_name: 'Demo Barangay' }],
     Intervention_Needs: [{ submission_id: 'S2', intervention_type_code: 'TRAINING' }],
     Ref_Intervention_Types: [{ intervention_type_code: 'TRAINING', intervention_type_name: 'Training' }],
@@ -46,7 +48,7 @@ function dashboardContext(authorized = true) {
       if (!authorized) throw new Error('Authorized staff access is required.');
       return { province_code: '603000000', lgu_code: '603037000' };
     },
-    getRowsAsObjects_: name => rows[name],
+    getRowsAsObjects_: name => rows[name] || [],
     assertStaffGeographicScope_: (staff, province, lgu) => {
       if (province !== staff.province_code || lgu !== staff.lgu_code) throw new Error('Outside scope');
     },
@@ -77,4 +79,11 @@ test('dashboard counts latest approved scoped records and keeps pending separate
 test('dashboard rejects unauthorized callers and invalid years', () => {
   assert.throws(() => dashboardContext(false).getDashboardData(2026), /Authorized staff/);
   assert.throws(() => dashboardContext().getDashboardData('bad'), /valid reference year/);
+});
+
+test('dashboard validates geography against staff scope', () => {
+  const context = dashboardContext();
+  assert.equal(context.getDashboardData(2026, { provinceCode: '603000000' }).farmerCount, 1);
+  assert.throws(() => context.getDashboardData(2026, { provinceCode: '999999999' }), /authorized area/);
+  assert.throws(() => context.getDashboardData(2026, { provinceCode: 'bad' }), /Invalid geography/);
 });

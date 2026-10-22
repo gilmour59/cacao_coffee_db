@@ -299,8 +299,10 @@
               <p class="mb-0">Figures come from this TEST Sheet, including fictional demo profiles. They are not field statistics. Pending submissions enter approved totals only after validation.</p>
             </div>
             <div class="dashboard-controls">
-              <label class="label" for="dashboard-year">Reference year</label>
-              <div class="select"><select id="dashboard-year"></select></div>
+              <div><label class="label" for="dashboard-year">Year</label><div class="select"><select id="dashboard-year"></select></div></div>
+              <div><label class="label" for="dashboard-province">Province</label><div class="select"><select id="dashboard-province"><option value="">All provinces</option></select></div></div>
+              <div><label class="label" for="dashboard-lgu">Municipality / city</label><div class="select"><select id="dashboard-lgu"><option value="">All municipalities / cities</option></select></div></div>
+              <div><label class="label" for="dashboard-barangay">Barangay</label><div class="select"><select id="dashboard-barangay"><option value="">All barangays</option></select></div></div>
               <button id="refresh-dashboard" class="button is-primary" type="button">Refresh</button>
             </div>
           </div>
@@ -320,6 +322,14 @@
             <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Top barangays by production</h3><div id="dashboard-barangays"></div></div></div>
           </div>
           <div class="box dashboard-panel"><h3 class="title is-5">Support needs reported</h3><div id="dashboard-needs"></div></div>
+          <div class="columns">
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by terrain</h3><div id="dashboard-topographies"></div></div></div>
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farm tenure</h3><div id="dashboard-tenure"></div></div></div>
+          </div>
+          <div class="columns">
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Primary water source</h3><div id="dashboard-water"></div></div></div>
+            <div class="column is-6"><div class="box dashboard-panel"><h3 class="title is-5">Farms by reported variety</h3><div id="dashboard-varieties"></div></div></div>
+          </div>
           <p class="help">Staff-only summary. No names, contact details, secure tokens, or precise farm coordinates are shown.</p>
         </section>
 

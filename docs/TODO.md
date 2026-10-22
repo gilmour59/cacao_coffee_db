@@ -22,6 +22,7 @@ Completed/working in TEST:
 
 Presentation materials (separate from the TEST app):
 - [x] Build an offline synthetic dashboard preview for the presentation (280 fictional farmers, 774 observations; no real records).
+- [x] Seed 120 fictional Western Visayas profiles in TEST and publish the staff dashboard with province, municipality, and barangay filters. Keep the offline preview as a fallback.
 - [x] Prepare a farmer-facing presenter guide with the TEST disclaimer.
 
 In progress now:
@@ -31,7 +32,7 @@ In progress now:
 - [x] Add staff-facing approved-farmer search + invitation generation/list/revoke workflow.
 - [ ] Add explicit resend/regenerate UX if HVCP wants it; raw invitation tokens are intentionally not stored.
 - [ ] Rehearse the October 23 demo on the presentation computer, including the TEST links, dashboard filters, and fallback if a live step fails.
-- [ ] Build a custom staff dashboard from approved canonical records after institutional hosting is ready; refresh after approval and periodically, with role and geographic scope enforced server-side.
+- [x] Build a custom TEST staff dashboard from approved canonical records, with periodic refresh and server-side role/geographic scope. Institutional hosting remains future work.
 - [ ] Decide the landing-page scope and host with HVCP. Proposed entry points: new-farmer form, staff sign-in, and a clearly labeled dashboard preview; existing farmers continue using private invitation links.
 - [ ] Extend browser UI from one farm to multiple farms if still required after the demo.
 - [ ] Add public endpoint rate/abuse protection.

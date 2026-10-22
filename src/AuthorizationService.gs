@@ -29,13 +29,17 @@ function requireStaffRole_(allowedRoles) {
 }
 
 function assertStaffGeographicScope_(user, provinceCode, lguCode) {
-  const userProvince = String(user.province_code || '').trim();
-  const userLgu = String(user.lgu_code || '').trim();
+  const normalized = function(value) {
+    const text = String(value || '').trim();
+    return /^\d{9,10}$/.test(text) ? text.padStart(10, '0') : text;
+  };
+  const userProvince = normalized(user.province_code);
+  const userLgu = normalized(user.lgu_code);
 
-  if (userProvince && userProvince !== String(provinceCode || '').trim()) {
+  if (userProvince && userProvince !== normalized(provinceCode)) {
     throw new Error('Record is outside your authorized province scope.');
   }
-  if (userLgu && userLgu !== String(lguCode || '').trim()) {
+  if (userLgu && userLgu !== normalized(lguCode)) {
     throw new Error('Record is outside your authorized LGU scope.');
   }
 }

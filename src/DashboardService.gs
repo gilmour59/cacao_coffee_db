@@ -1,13 +1,46 @@
-function getDashboardData(referenceYear) {
+function getDashboardData(referenceYear, geography) {
   const staff = requireStaffRole_([STAFF_ROLES.ADMIN, STAFF_ROLES.VALIDATOR, STAFF_ROLES.ENCODER]);
   const year = Number(referenceYear);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     throw new Error('Select a valid reference year.');
   }
+  geography = geography || {};
+  if (typeof geography !== 'object' || Array.isArray(geography)) throw new Error('Invalid geography filter.');
+  function code(value) { return value ? String(value).padStart(10, '0') : ''; }
+  const province = code(geography.provinceCode);
+  const lgu = code(geography.lguCode);
+  const barangay = code(geography.barangayCode);
+  if ([province, lgu, barangay].some(function(code) { return code && !/^\d{9,10}$/.test(code); })) {
+    throw new Error('Invalid geography filter.');
+  }
+  const lgus = getRowsAsObjects_('Ref_LGUs').filter(function(row) {
+    return String(row.is_active).toUpperCase() !== 'FALSE' && inScope(row.province_code, row.lgu_code);
+  });
+  const provinces = getRowsAsObjects_('Ref_Provinces').filter(function(row) {
+    return String(row.is_active).toUpperCase() !== 'FALSE' && lgus.some(function(l) {
+      return code(l.province_code) === code(row.province_code);
+    });
+  });
+  const barangays = getRowsAsObjects_('Ref_Barangays').filter(function(row) {
+    return String(row.is_active).toUpperCase() !== 'FALSE' && lgus.some(function(l) {
+      return code(l.lgu_code) === code(row.lgu_code) && code(l.province_code) === code(row.province_code);
+    });
+  });
+  if ((province && !provinces.some(function(row) { return code(row.province_code) === province; })) ||
+      (lgu && !lgus.some(function(row) { return code(row.lgu_code) === lgu && (!province || code(row.province_code) === province); })) ||
+      (barangay && !barangays.some(function(row) { return code(row.barangay_code) === barangay &&
+        (!lgu || code(row.lgu_code) === lgu) && (!province || code(row.province_code) === province); }))) {
+    throw new Error('Select a location within your authorized area.');
+  }
+  function matches(row) {
+    return (!province || code(row.province_code) === province) &&
+      (!lgu || code(row.lgu_code) === lgu) &&
+      (!barangay || code(row.barangay_code) === barangay);
+  }
 
   function inScope(provinceCode, lguCode) {
     try {
-      assertStaffGeographicScope_(staff, provinceCode, lguCode);
+      assertStaffGeographicScope_({ province_code: code(staff.province_code), lgu_code: code(staff.lgu_code) }, code(provinceCode), code(lguCode));
       return true;
     } catch (error) {
       return false;
@@ -17,13 +50,13 @@ function getDashboardData(referenceYear) {
   const farmers = {};
   getRowsAsObjects_('Farmers').forEach(function(row) {
     if (String(row.record_status || '').toUpperCase() !== 'ACTIVE') return;
-    if (inScope(row.residence_province_code, row.residence_lgu_code)) farmers[row.farmer_id] = row;
+    farmers[row.farmer_id] = row;
   });
 
   const farms = {};
   getRowsAsObjects_('Farms').forEach(function(row) {
     if (String(row.record_status || '').toUpperCase() !== 'ACTIVE') return;
-    if (!farmers[row.farmer_id] || !inScope(row.province_code, row.lgu_code)) return;
+    if (!farmers[row.farmer_id] || !inScope(row.province_code, row.lgu_code) || !matches(row)) return;
     farms[row.farm_id] = row;
   });
 
@@ -47,6 +80,44 @@ function getDashboardData(referenceYear) {
   selectedRounds.forEach(function(row) { selectedIds[row.profiling_round_id] = true; });
   const selectedFarmerIds = {};
   selectedRounds.forEach(function(row) { selectedFarmerIds[row.farmer_id] = true; });
+  const selectedFarmIds = {};
+  selectedRounds.forEach(function(row) { selectedFarmIds[row.farm_id] = true; });
+  function countsByCode(sheetName, codeField, selected) {
+    const counts = {};
+    getRowsAsObjects_(sheetName).forEach(function(row) {
+      if (!selected(row)) return;
+      const code = String(row[codeField] || 'UNKNOWN');
+      counts[code] = (counts[code] || 0) + 1;
+    });
+    return counts;
+  }
+  function namedCounts(counts, referenceSheet, codeField, nameField) {
+    const names = {};
+    getRowsAsObjects_(referenceSheet).forEach(function(row) { names[row[codeField]] = row[nameField]; });
+    return Object.keys(counts).map(function(code) { return { name: names[code] || code, count: counts[code] }; })
+      .sort(function(a, b) { return b.count - a.count; });
+  }
+  const farmRows = Object.keys(selectedFarmIds).map(function(id) { return farms[id]; });
+  const topographyCounts = {};
+  const tenureCounts = {};
+  farmRows.forEach(function(farm) {
+    const topography = String(farm.topography_code || 'UNKNOWN');
+    const tenure = String(farm.tenure_code || 'UNKNOWN');
+    topographyCounts[topography] = (topographyCounts[topography] || 0) + 1;
+    tenureCounts[tenure] = (tenureCounts[tenure] || 0) + 1;
+  });
+  const waterCounts = countsByCode('Farm_Water_Sources', 'water_source_code', function(row) {
+    return selectedFarmIds[row.farm_id] && (row.is_primary === true || String(row.is_primary).toUpperCase() === 'TRUE');
+  });
+  const varietyFarms = {};
+  getRowsAsObjects_('Plantings').forEach(function(row) {
+    if (!selectedFarmIds[row.farm_id] || String(row.record_status).toUpperCase() !== 'ACTIVE') return;
+    const code = String(row.variety_code || 'UNKNOWN');
+    if (!varietyFarms[code]) varietyFarms[code] = {};
+    varietyFarms[code][row.farm_id] = true;
+  });
+  const varietyCounts = {};
+  Object.keys(varietyFarms).forEach(function(code) { varietyCounts[code] = Object.keys(varietyFarms[code]).length; });
 
   const commodities = {
     COFFEE: { code: 'COFFEE', areaHa: 0, bearingTrees: 0, productionKg: 0 },
@@ -79,7 +150,7 @@ function getDashboardData(referenceYear) {
   });
 
   const barangayNames = {};
-  getRowsAsObjects_('Ref_Barangays').forEach(function(row) {
+  barangays.forEach(function(row) {
     barangayNames[row.barangay_code] = row.barangay_name;
   });
   const needsByType = {};
@@ -105,6 +176,11 @@ function getDashboardData(referenceYear) {
       if (row.farmer_id && !farmers[row.farmer_id]) return false;
       if (!row.farmer_id && !(payload.farmer || (payload.farms && payload.farms[0]))) return false;
       assertSubmissionScopeForStaff_(staff, row, payload);
+      const farm = payload.farms && payload.farms[0];
+      const location = farm || payload.farmer || {};
+      if (!matches({ province_code: location.province_code || location.residence_province_code,
+        lgu_code: location.lgu_code || location.residence_lgu_code,
+        barangay_code: location.barangay_code || location.residence_barangay_code })) return false;
       return true;
     } catch (error) {
       return false;
@@ -113,6 +189,12 @@ function getDashboardData(referenceYear) {
   const cropRows = Object.keys(commodities).map(function(key) { return commodities[key]; });
   return {
     year: year,
+    geography: { provinceCode: province, lguCode: lgu, barangayCode: barangay },
+    locations: {
+      provinces: provinces.map(function(row) { return { code: code(row.province_code), name: row.province_name }; }),
+      lgus: lgus.map(function(row) { return { code: code(row.lgu_code), provinceCode: code(row.province_code), name: row.lgu_name }; }),
+      barangays: barangays.map(function(row) { return { code: code(row.barangay_code), lguCode: code(row.lgu_code), name: row.barangay_name }; })
+    },
     years: Array.from(new Set(allRounds.map(function(row) { return Number(row.reference_year); })
       .filter(function(value) { return Number.isInteger(value) && value >= 2000 && value <= 2100; })
       .concat(year))).sort(),
@@ -134,6 +216,10 @@ function getDashboardData(referenceYear) {
     needs: Object.keys(needsByType).map(function(code) {
       return { name: needNames[code] || code, farmerCount: Object.keys(needsByType[code]).length };
     }).sort(function(a, b) { return b.farmerCount - a.farmerCount; }).slice(0, 5),
+    topographies: namedCounts(topographyCounts, 'Ref_Topographies', 'topography_code', 'topography_name'),
+    tenure: namedCounts(tenureCounts, 'Ref_Tenure', 'tenure_code', 'tenure_name'),
+    waterSources: namedCounts(waterCounts, 'Ref_Water_Sources', 'water_source_code', 'water_source_name'),
+    varieties: namedCounts(varietyCounts, 'Ref_Varieties', 'variety_code', 'variety_name'),
     refreshedAt: new Date().toISOString()
   };
 }
